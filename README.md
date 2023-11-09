@@ -6,8 +6,8 @@
 
 ### Workflow
 
-![tf-dl](/Users/cmf/Downloads/TFNet-multi-tf/img/tf-dl.png)
-
+![tf-dl](img/tf-dl.png)
+<img src="img/tf-dl.png" width="200">
 
 
 ### for TFNet Training and Testing
