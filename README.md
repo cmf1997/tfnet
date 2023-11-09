@@ -7,8 +7,6 @@
 ### Workflow
 
 ![tf-dl](img/tf-dl.png)
-<img src="img/tf-dl.png" width="200">
-
 
 ### for TFNet Training and Testing
 
