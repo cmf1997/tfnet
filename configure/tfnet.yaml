@@ -1,0 +1,46 @@
+name: TFNet
+path: models
+
+model:
+  emb_size: 5
+  conv_size: [5, 9, 13, 17, 21]
+  conv_num: [16, 16, 16, 16, 16]
+  conv_off: [8, 6, 4, 2, 0]
+  dropout: 0.25
+  linear_size: [32, 16]
+  full_size: [4096, 256,64] # the frist size should be [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 2**2**len(self.max_pool) ]
+  DNA_pad: 10
+
+padding:
+  DNA_len: 1024
+  DNA_pad: 10
+  tf_len: 34
+
+binding:
+  peptide_len: 40
+  peptide_pad: 0
+  mhc_len: 34
+
+seq2logo:
+  peptide_len: 15
+  peptide_pad: 0
+  mhc_len: 34
+
+train:
+  #batch_size: 128
+  batch_size: 2
+  #num_epochs: 20
+  num_epochs: 2
+  opt_params:
+    optimizer_cls: Adadelta
+    #lr: 0.9
+    lr: 0.5
+    weight_decay: 1e-4
+
+valid:
+ #batch_size: 128
+  batch_size: 2
+
+test:
+  #batch_size: 128
+  batch_size: 2

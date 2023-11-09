@@ -1,0 +1,11 @@
+mhc_seq: data/pseudosequence.2016.all.X.dat
+#train: data/data.txt
+train: data/train_tf_binary.txt
+#test: data/test_binary.txt
+test: data/test_tf_binary.txt
+predict: data/test_tf_binary.txt
+epitope: data/epitope.txt
+cv_id: data/cv_id.txt
+binding: data/binding.txt
+seq2logo: data/seq2logo.txt
+results: results
