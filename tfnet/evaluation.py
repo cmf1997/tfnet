@@ -10,7 +10,6 @@
 '''
 
 # here put the import lib
-import math
 import csv
 import numpy as np
 
