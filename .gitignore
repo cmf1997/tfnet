@@ -5,3 +5,6 @@
 /result*
 /log*
 /notebook*
+/data/temp
+/data/tf_chip
+/data/genome
