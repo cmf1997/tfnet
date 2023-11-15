@@ -9,3 +9,13 @@ cv_id: data/cv_id.txt
 binding: data/binding.txt
 seq2logo: data/seq2logo.txt
 results: results
+
+input_dir : data/tf_chip/
+genome_window_step: 200
+valid_chroms: ['chr10']
+test_chroms: ['chr11']
+
+genome_sizes_file: data/tf_chip/hg19.chrom.sizes.reduced
+blacklist_file: data/tf_chip/filter_blacklist.bed
+
+genome_fasta_file: data/genome/genome.fa

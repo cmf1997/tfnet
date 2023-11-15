@@ -8,6 +8,10 @@
 
 ![tf-dl](img/tf-dl.png)
 
+### for preprocess chip-seq data
+python preprocess.py -d configure/data.yaml -m configure/tfnet.yaml
+
+
 ### for TFNet Training and Testing
 
 ```
