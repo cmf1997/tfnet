@@ -7,6 +7,8 @@
 @Author : Cmf
 @Version : 1.0
 @Desc : preprocess chip-seq data, input as a datafolder, output as a interval and multiple binary labels
+blacklist were downloaded from https://github.com/Boyle-Lab/Blacklist/blob/master/lists/hg19-blacklist.v2.bed.gz
+test data were downloaded from https://www.synapse.org/#!Synapse:syn6131484/wiki/402033
 '''
 
 # here put the import lib
@@ -21,6 +23,9 @@ import click
 from pathlib import Path
 import csv
 from tfnet.all_tfs import all_tfs
+import os
+from Bio import SeqIO
+import random
 
 import pdb
 
@@ -114,18 +119,8 @@ def chroms_filter(feature, chroms):
     return False
 
 
-def subset_chroms(chroms, bed):
-    result = bed.filter(chroms_filter, chroms).saveas()
-    return BedTool(result.fn)
-
-
-def get_dna_seq(fastafile, bedfile):
-    bef2fasta = bedfile.getfasta(fi=fastafile )
-    return bef2fasta
-
-
 def write_result(filename, tfs_bind_datas, result_filefolder):
-    with open(result_filefolder + filename +'.txt', 'w') as output_file:
+    with open(result_filefolder + filename +'.bed', 'w') as output_file:
         writer = csv.writer(output_file, delimiter="\t")
         for chrom, start, stop, target_array in tfs_bind_datas:
             writer.writerow([chrom, start, stop, target_array])
@@ -136,7 +131,6 @@ def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive,
     train_chroms = chroms
     for chrom in valid_chroms + test_chroms:
         train_chroms.remove(chrom)
-    #genome_bed_train, genome_bed_valid, genome_bed_test = [subset_chroms(chroms_set, genome_bed) for chroms_set in (train_chroms, valid_chroms, test_chroms)]
 
     positive_data_train = []
     positive_data_valid = []
@@ -155,18 +149,18 @@ def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive,
         target_array = np.array(target_array, dtype=str)
         target_array = ','.join(target_array)
 
-        window_DNA_seq = BedTool([Interval(chrom, start, stop)]).getfasta(fi=genome_fasta_file)
-        read_seq = open(window_DNA_seq.seqfn).read().split('\n')[1]
+        #window_DNA_seq = BedTool([positive_window]).getfasta(fi=genome_fasta_file)
+        #read_seq = open(window_DNA_seq.seqfn).read().split('\n')[1]
 
         if chrom in test_chroms:
-            positive_data_test.append((read_seq, target_array))
-            #positive_data_test.append((chrom, start, stop, target_array))
+            #positive_data_test.append((read_seq, target_array))
+            positive_data_test.append((chrom, start, stop, target_array))
         elif chrom in valid_chroms:
-            positive_data_valid.append((read_seq, target_array))
-            #positive_data_valid.append((chrom, start, stop, target_array))
+            #positive_data_valid.append((read_seq, target_array))
+            positive_data_valid.append((chrom, start, stop, target_array))
         else:
-            positive_data_train.append((read_seq, target_array))
-            #positive_data_train.append((chrom, start, stop, target_array))
+            #positive_data_train.append((read_seq, target_array))
+            positive_data_train.append((chrom, start, stop, target_array))
 
     write_result('pos_data_test',positive_data_test, result_filefolder)
     write_result('pos_data_valid',positive_data_valid, result_filefolder)
@@ -195,15 +189,23 @@ def make_neg_features_multiTask(genome_sizes_file, negative_windows, valid_chrom
         start = int(negative_window.start)
         stop = int(negative_window.stop)
 
-        window_DNA_seq = BedTool([Interval(chrom, start, stop)]).getfasta(fi=genome_fasta_file)
-        read_seq = open(window_DNA_seq.seqfn).read().split('\n')[1]
+        #window_DNA_seq = BedTool([Interval(chrom, start, stop)]).getfasta(fi=genome_fasta_file)
+        #read_seq = open(window_DNA_seq.seqfn).read().split('\n')[1]
 
         if chrom in test_chroms:
-            negative_data_test.append((read_seq, target_array))
+            #negative_data_test.append((read_seq, target_array))
+            negative_data_test.append((chrom, start, stop, target_array))
         elif chrom in valid_chroms:
-            negative_data_valid.append((read_seq, target_array))
+            #negative_data_valid.append((read_seq, target_array))
+            negative_data_valid.append((chrom, start, stop, target_array))
         else:
-            negative_data_train.append((read_seq, target_array))
+            #negative_data_train.append((read_seq, target_array))
+            negative_data_train.append((chrom, start, stop, target_array))
+
+    # ---------------------- constrain the size of negative file ---------------------- #
+    negative_data_test = random.sample(negative_data_test, 1000)
+    negative_data_valid = random.sample(negative_data_valid, 1000)
+    negative_data_train = random.sample(negative_data_train, 10000)
 
     write_result('neg_data_test',negative_data_test, result_filefolder)
     write_result('neg_data_valid',negative_data_valid, result_filefolder)
@@ -236,7 +238,32 @@ def main(data_cnf, model_cnf):
     blacklist = make_blacklist(blacklist_file, genome_sizes_file, genome_window_size)
     tfs, positive_windows, y_positive, negative_windows = load_chip_multiTask(input_dir,genome_sizes_file, genome_window_size, genome_window_step, blacklist)
     make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, result_filefolder)
+    make_neg_features_multiTask(genome_sizes_file, negative_windows, valid_chroms, test_chroms, genome_fasta_file, result_filefolder)
 
+    # ---------------------- use seqkit to grep fasta due to low effiency of pybedtools getfasta---------------------- #
+    os.system("seqkit subseq --bed {}pos_data_test.bed {} > {}pos_data_test.fa".format(result_filefolder, genome_fasta_file, result_filefolder))
+    os.system("seqkit subseq --bed {}neg_data_test.bed {} > {}neg_data_test.fa".format(result_filefolder, genome_fasta_file, result_filefolder))
+
+    os.system("seqkit subseq --bed {}pos_data_valid.bed {} > {}pos_data_valid.fa".format(result_filefolder, genome_fasta_file, result_filefolder))
+    os.system("seqkit subseq --bed {}neg_data_valid.bed {} > {}neg_data_valid.fa".format(result_filefolder, genome_fasta_file, result_filefolder))
+
+    os.system("seqkit subseq --bed {}pos_data_train.bed {} > {}pos_data_train.fa".format(result_filefolder, genome_fasta_file, result_filefolder))
+    os.system("seqkit subseq --bed {}neg_data_train.bed {} > {}neg_data_train.fa".format(result_filefolder, genome_fasta_file, result_filefolder))
+
+
+    for file_name in ['pos_data_test', 'neg_data_test', 'pos_data_valid', 'neg_data_valid', 'pos_data_train', 'neg_data_train']:
+        data_fasta = SeqIO.parse(result_filefolder + str(file_name) + ".fa", "fasta")
+        #data_bed = np.loadtxt(result_filefolder + str(file_name) + '.bed', dtype=str)
+        #assert len(list(data_fasta)) == data_bed.shape[0]
+        with open(result_filefolder + file_name + '.txt',"w") as fp :
+            writer = csv.writer(fp, delimiter="\t")
+            #for fasta, target_array in zip(data_fasta, data_bed):
+            for fasta in data_fasta:
+                if str(fasta.seq).count("N") > 100 or str(fasta.seq).count("n") > 100 :
+                    print(f"sequence contain multifpe N, pass")
+                
+                else:
+                    writer.writerow([str(fasta.seq), fasta.description.split('.')[1]])
 
 if __name__ == '__main__':
     main()

@@ -16,21 +16,9 @@ padding:
   DNA_pad: 10
   tf_len: 34
 
-binding:
-  peptide_len: 40
-  peptide_pad: 0
-  mhc_len: 34
-
-seq2logo:
-  peptide_len: 15
-  peptide_pad: 0
-  mhc_len: 34
-
 train:
-  #batch_size: 128
-  batch_size: 2
-  #num_epochs: 20
-  num_epochs: 2
+  batch_size: 128
+  num_epochs: 20
   opt_params:
     optimizer_cls: Adadelta
     #lr: 0.9
@@ -38,9 +26,7 @@ train:
     weight_decay: 1e-4
 
 valid:
- #batch_size: 128
   batch_size: 2
 
 test:
-  #batch_size: 128
   batch_size: 2
