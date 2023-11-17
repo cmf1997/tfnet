@@ -44,6 +44,7 @@ class TFBindDataset(Dataset):
             #DNA_x = mat[:DNA_len, :5]    
             DNA_x = mat[:DNA_len + DNA_pad*2, :5]
             DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
+            
             # ---------------------- atac_signal need padding like DNA_x ---------------------- #
             #atac_signal = [0 for i in range(DNA_pad)] + atac_signal + [0 for i in range(DNA_pad)]
             #atac_signal = np.expand_dims(atac_signal,axis=-1)
