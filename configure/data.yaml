@@ -10,7 +10,8 @@ binding: data/binding.txt
 seq2logo: data/seq2logo.txt
 results: results
 
-input_dir : data/tf_chip/
+input_dir: data/tf_chip/
+atac_file: data/atac/DNASE.GM12878.fc.signal.bigwig
 genome_window_step: 200
 valid_chroms: ['chr10']
 test_chroms: ['chr11']

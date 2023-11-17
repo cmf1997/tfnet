@@ -29,6 +29,7 @@ class TFBindDataset(Dataset):
         self.DNA_x, self.tf_x, self.targets = [], [], []
         #for tf_name, DNA_seq, tf_seq, score in tqdm(data_list, leave=False):
         for DNA_seq, bind_list, all_tfs_seq in tqdm(data_list, leave=False):    
+        #for DNA_seq, atac_signal, bind_list, all_tfs_seq in tqdm(data_list, leave=False):   
             #self.tf_names.append(tf_name)
             # one-hot encode for DNA input
             d = {'a':0, 'A':0, 'g':1, 'G':1, 'c':2, 'C':2, 't':3, 'T':3, 'N':4, 'n':4}
@@ -43,6 +44,12 @@ class TFBindDataset(Dataset):
             #DNA_x = mat[:DNA_len, :5]    
             DNA_x = mat[:DNA_len + DNA_pad*2, :5]
             DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
+            # ---------------------- atac_signal need padding like DNA_x ---------------------- #
+            #atac_signal = [0 for i in range(DNA_pad)] + atac_signal + [0 for i in range(DNA_pad)]
+            #atac_signal = np.expand_dims(atac_signal,axis=-1)
+            #atac_signal = torch.Tensor(atac_signal, dtype=torch.float32)
+            #DNA_x = torch.cat([DNA_x, atac_signal],dim=1)
+            
             #self.DNA_x.append(DNA_x)
             #assert self.DNA_x[-1].shape[1] == DNA_len + DNA_pad * 2
             tf_x = []

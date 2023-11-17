@@ -2,7 +2,7 @@ name: TFNet
 path: models
 
 model:
-  emb_size: 5
+  emb_size: 6
   conv_size: [5, 9, 13, 17, 21]
   conv_num: [16, 16, 16, 16, 16]
   conv_off: [8, 6, 4, 2, 0]
