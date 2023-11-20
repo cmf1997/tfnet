@@ -38,7 +38,6 @@ samtools index merge.bam
 # run the bamCoverage in deeptools to generate the required .bw file 
 bamCoverage --bam merge.bam -o merge.bw -p 4 --binSize 1 --normalizeUsing RPGC --effectiveGenomeSize 2864785220 --ignoreForNormalization chrX chrM 
 # effectiveGenomeSize can be found [here](https://deeptools.readthedocs.io/en/latest/content/feature/effectiveGenomeSize.html)
-
 ```
 
 
