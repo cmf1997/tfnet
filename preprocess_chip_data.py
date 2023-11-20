@@ -123,8 +123,8 @@ def chroms_filter(feature, chroms):
 def write_result(filename, tfs_bind_datas, result_filefolder):
     with open(result_filefolder + filename +'.bed', 'w') as output_file:
         writer = csv.writer(output_file, delimiter="\t")
-        for chrom, start, stop, target_array in tfs_bind_datas:
-            writer.writerow([chrom, start, stop, target_array])
+        for chrom, start, stop, atac_signal, target_array in tfs_bind_datas:
+            writer.writerow([chrom, start, stop, atac_signal, target_array])
 
 
 def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, atac_data, result_filefolder):
