@@ -1,13 +1,7 @@
-mhc_seq: data/pseudosequence.2016.all.X.dat
-#train: data/data.txt
-train: data/train_tf_binary.txt
-#test: data/test_binary.txt
-test: data/test_tf_binary.txt
+tf_seq: tf_pseudosequences.txt
+train: data/tf_chip/pos_data_train.bed
+test: data/tf_chip/pos_data_valid.bed
 predict: data/test_tf_binary.txt
-epitope: data/epitope.txt
-cv_id: data/cv_id.txt
-binding: data/binding.txt
-seq2logo: data/seq2logo.txt
 results: results
 
 input_dir: data/tf_chip/

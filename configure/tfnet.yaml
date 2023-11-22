@@ -14,7 +14,8 @@ model:
 padding:
   DNA_len: 1024
   DNA_pad: 10
-  tf_len: 34
+  tf_len: 31
+  #tf_len: 34
 
 train:
   batch_size: 128
