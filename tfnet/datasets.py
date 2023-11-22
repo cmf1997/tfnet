@@ -24,7 +24,7 @@ __all__ = ["TFBindDataset"]
 
 # code
 class TFBindDataset(Dataset):
-    def __init__(self, data_list, DNA_len=1024, DNA_pad=0, tf_len=39, padding_idx=0):
+    def __init__(self, data_list, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0):
         #self.tf_names, self.DNA_x, self.tf_x, self.targets = [], [], [], []
         self.DNA_x, self.tf_x, self.targets = [], [], []
         #for tf_name, DNA_seq, tf_seq, score in tqdm(data_list, leave=False):
