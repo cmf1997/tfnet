@@ -20,7 +20,7 @@ __all__ = ['IConv']
 
 # code
 class IConv(nn.Module):
-    def __init__(self, out_channels, kernel_size, tf_len=34, stride=1, **kwargs):
+    def __init__(self, out_channels, kernel_size, tf_len=39, stride=1, **kwargs):
         super(IConv, self).__init__()
         # h weight matrices 
         self.weight = nn.Parameter(torch.Tensor(out_channels, kernel_size, tf_len))

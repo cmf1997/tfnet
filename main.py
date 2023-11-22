@@ -120,7 +120,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
             
     elif mode == 'eval':
         test_data = get_data_fn(data_cnf['test'])
-        DNA_seqs, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data]
+        DNA_seqs, atac_signal, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
             model = Model(TFNet, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'),
@@ -130,7 +130,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     
     elif mode == 'predict':
         predict_data = get_data_fn(data_cnf['predict'])
-        DNA_seqs, targets_lists = [x[0] for x in predict_data], [x[1] for x in predict_data]
+        DNA_seqs, atac_signal, targets_lists = [x[0] for x in predict_data], [x[1] for x in predict_data], [x[2] for x in predict_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
             model = Model(TFNet, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'),
@@ -140,7 +140,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
 
     elif mode == '5cv':
         data = np.asarray(get_data_fn(data_cnf['train']), dtype=object)
-        data_group_name, data_truth = [x[0] for x in data], [x[1] for x in data]
+        data_group_name, atac_signal, data_truth = [x[0] for x in data], [x[1] for x in data], [x[2] for x in data]
         cv_id_len = data.shape[0]
         # ---------------------- generate cv id for use rather than read a input ---------------------- #
         cv_id = generate_cv_id(cv_id_len)

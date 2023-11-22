@@ -24,7 +24,7 @@ __all__ = ['TFNet']
 
 # code
 class Network(nn.Module):
-    def __init__(self, *, emb_size=4, vocab_size=len(ACIDS), padding_idx=0, DNA_pad=0, tf_len=34, **kwargs):
+    def __init__(self, *, emb_size=6, vocab_size=len(ACIDS), padding_idx=0, DNA_pad=10, tf_len=39, **kwargs):
         super(Network, self).__init__()
         self.tf_emb = nn.Embedding(vocab_size, emb_size)
         self.DNA_pad, self.padding_idx, self.tf_len = DNA_pad, padding_idx, tf_len
@@ -73,7 +73,7 @@ class TFNet(Network):
                 conv_1 = linear_bn(F.relu(linear(conv_1)))
             conv_out_linear.append(conv_1)
         conv_out = torch.stack(conv_out_linear,dim=-1)
-
+        print("shape before max pool",conv_out.shape)
         # ---------------- reduce dim -1，-2 by maxpool 2d ----------------#
         conv_out_max_pool =[]
         for conv_1 in conv_out.unbind(dim=-1):
@@ -82,9 +82,11 @@ class TFNet(Network):
             conv_out_max_pool.append(conv_1)
         conv_out = torch.stack(conv_out_max_pool,dim=-1)
         conv_out = conv_out.view(conv_out.shape[0], -1,conv_out.shape[-1])
+        print("shape before flatten",conv_out.shape)
 
         # ---------------- flatten and output ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)
+        print("shape before full connect",conv_out.shape)
         #print("shape before full connect", conv_out.shape)
         for full, full_bn in zip(self.full_connect, self.full_connect_bn):
             #print("shape after full connect", full(conv_out).shape)

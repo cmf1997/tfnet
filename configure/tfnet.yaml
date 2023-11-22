@@ -8,13 +8,13 @@ model:
   conv_off: [8, 6, 4, 2, 0]
   dropout: 0.25
   linear_size: [32, 16]
-  full_size: [4096, 256,64] # the frist size should be [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 2**2**len(self.max_pool) ]
+  full_size: [29696, 256,64] # the frist size should be [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 2**2**len(self.max_pool) ]
   DNA_pad: 10
 
 padding:
   DNA_len: 1024
   DNA_pad: 10
-  tf_len: 31
+  tf_len: 39
   #tf_len: 34
 
 train:

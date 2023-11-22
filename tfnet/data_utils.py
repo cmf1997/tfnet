@@ -35,7 +35,7 @@ def get_data(data_file, tf_name_seq):
          all_tfs_seq.append(tf_name_seq[tf_name])
     with open(data_file) as fp:
         for line in fp:
-            DNA_seq, bind_list,  = line.split()
+            #DNA_seq, bind_list,  = line.split()
             DNA_seq, atac_signal, bind_list  = line.split()
             atac_signal = [float(i) for i in atac_signal.split(',')]
             bind_list = [float(i) for i in bind_list.split(',')]
