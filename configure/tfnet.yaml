@@ -8,7 +8,7 @@ model:
   conv_off: [8, 6, 4, 2, 0]
   dropout: 0.25
   linear_size: [32, 16]
-  full_size: [29696, 256,64] # the frist size should be [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
+  full_size: [1856, 256,64] # the frist size should be [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
   DNA_pad: 10
 
 padding:
@@ -22,8 +22,7 @@ train:
   num_epochs: 20
   opt_params:
     optimizer_cls: Adadelta
-    #lr: 0.9
-    lr: 0.5
+    lr: 0.9
     weight_decay: 1e-4
 
 valid:

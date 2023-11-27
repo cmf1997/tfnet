@@ -49,7 +49,7 @@ class TFNet(Network):
                                      for in_s, out_s in zip(linear_size[:-1], linear_size[1:])])
         self.linear_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in linear_size[1:]])
 
-        self.max_pool = nn.ModuleList([nn.MaxPool2d(kernel_size = 2, stride = 2) for i in range(2)])
+        self.max_pool = nn.ModuleList([nn.MaxPool2d(kernel_size = 2, stride = 2) for i in range(4)])
 
         #full_size_first = [4096] # [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 2**2**len(self.max_pool) ]
         full_size = full_size + [len(all_tfs)]
