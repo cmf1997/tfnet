@@ -12,21 +12,21 @@
 ### TF pseudosequence generation
 
 ```
-# all DBD sequences were collected from [cis-bp](http://cisbp.ccbr.utoronto.ca)
 # align all DBD sequences by mafft
 # calculate the metrics
 ```
+all DBD sequences were collected from [cis-bp](http://cisbp.ccbr.utoronto.ca)
 
 
 ### Genomic sequence data
 
 ```
-# Genomic sequence is provided as fasta format. You can download these files from [here](https://hgdownload.soe.ucsc.edu/downloads.html)
 # Genome size of each chromosome, may need to filter some chrom in the hg19.chrom.sizes.reduced
 samtools faidx data/genome/genome.fa
 cut -f 1,2 data/genome/genome.fa.fai > data/hg19.chrom.sizes.reduced
-# blacklist can be downloaded from [here](https://github.com/Boyle-Lab/Blacklist/blob/master/lists/)
 ```
+Genomic sequence is provided as fasta format. You can download these files from [here](https://hgdownload.soe.ucsc.edu/downloads.html)
+blacklist can be downloaded from [here](https://github.com/Boyle-Lab/Blacklist/blob/master/lists/)
 
 
 ### for preprocessing Chromatin accessibility data
@@ -37,8 +37,8 @@ samtools merge -o merge.bam rep1.bam rep2.bam
 samtools index merge.bam
 # run the bamCoverage in deeptools to generate the required .bw file 
 bamCoverage --bam merge.bam -o merge.bw -p 4 --binSize 1 --normalizeUsing RPGC --effectiveGenomeSize 2864785220 --ignoreForNormalization chrX chrM 
-# effectiveGenomeSize can be found [here](https://deeptools.readthedocs.io/en/latest/content/feature/effectiveGenomeSize.html)
 ```
+effectiveGenomeSize can be found [here](https://deeptools.readthedocs.io/en/latest/content/feature/effectiveGenomeSize.html)
 
 
 ### for preprocessing chip-seq data
