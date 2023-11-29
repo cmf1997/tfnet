@@ -42,11 +42,7 @@ def get_label_ranking_average_precision_score(targets, scores):
 
 
 def get_mean_f1(targets, scores):
-    f1_score_list = []
-    for i in range(targets.shape[0]):
-        f1 = f1_score(targets[i, :], scores[i, :]> CUTOFF, average = "samples")
-        f1_score_list.append(f1)
-    return np.mean(np.array(f1_score_list, dtype=float))
+    return f1_score(targets, scores > CUTOFF, average='samples', zero_division=1.0)
 
 
 def get_mean_accuracy_score(targets, scores):
