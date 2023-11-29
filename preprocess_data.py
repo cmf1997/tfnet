@@ -27,6 +27,7 @@ from tfnet.all_tfs import all_tfs
 import os
 import pyBigWig
 import pysam
+import re
 import random
 
 import pdb
@@ -144,6 +145,10 @@ def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive,
         stop = int(positive_window.stop)
 
         window_fasta = genome_fasta.fetch(chrom, start, stop)
+        if len(re.findall('[atcgn]', window_fasta.lower())) == len(window_fasta):
+            continue
+        else:
+            break
 
         target_array = np.array(target_array, dtype=int)
         target_array = np.array(target_array, dtype=str)
@@ -187,6 +192,12 @@ def make_neg_features_multiTask(genome_sizes_file, negative_windows, valid_chrom
         stop = int(negative_window.stop)
 
         window_fasta = genome_fasta.fetch(chrom, start, stop)
+
+        window_fasta = genome_fasta.fetch(chrom, start, stop)
+        if len(re.findall('[atcgn]', window_fasta.lower())) == len(window_fasta):
+            continue
+        else:
+            break
 
         try:
             atac_data.values(chrom,start,stop)

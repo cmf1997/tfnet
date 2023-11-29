@@ -11,6 +11,7 @@
 
 # here put the import lib
 from tfnet.all_tfs import all_tfs
+import re
 
 __all__ = ['ACIDS', 'get_tf_name_seq', 'get_data', 'get_binding_data', 'get_seq2logo_data', 'set_DNA_len']
 
@@ -39,7 +40,10 @@ def get_data(data_file, tf_name_seq):
             DNA_seq, atac_signal, bind_list  = line.split()
             atac_signal = [float(i) for i in atac_signal.split(',')]
             bind_list = [float(i) for i in bind_list.split(',')]
-            if len(DNA_seq) == set_DNA_len:
+
+            # ---------------------- encounter w r in dna seq ---------------------- #
+
+            if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcgn]', DNA_seq.lower())):
                 #data_list.append((DNA_seq, bind_list, all_tfs_seq))
                 data_list.append((DNA_seq, atac_signal, bind_list, all_tfs_seq))
     return data_list
