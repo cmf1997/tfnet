@@ -99,13 +99,13 @@ class TFNet(Network):
             conv_bn.reset_parameters()
             nn.init.normal_(conv_bn.weight.data, mean=1.0, std=0.002)
         for linear, linear_bn in zip(self.linear, self.linear_bn):
-            #truncated_normal_(linear.weight, std=0.02)
             nn.init.trunc_normal_(linear.weight, std=0.02)
             nn.init.zeros_(linear.bias)
             linear_bn.reset_parameters()
             nn.init.normal_(linear_bn.weight.data, mean=1.0, std=0.002)
         for full_connect, full_connect_bn in zip(self.full_connect, self.full_connect_bn):
-            full_connect.reset_parameters()
-            #nn.init.trunc_normal_(full_connect.weight, std=0.02)
+            #full_connect.reset_parameters()
+            nn.init.trunc_normal_(full_connect.weight, std=0.02)
+            nn.init.zeros_(full_connect.bias)
             full_connect_bn.reset_parameters()
             nn.init.normal_(full_connect_bn.weight.data, mean=1.0, std=0.002)

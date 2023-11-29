@@ -18,18 +18,23 @@ from scipy.stats import spearmanr
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import label_ranking_average_precision_score
+from sklearn.metrics import accuracy_score
 from tfnet.all_tfs import all_tfs
 from logzero import logger
 
-__all__ = ['CUTOFF', 'get_auc', 'get_pcc', 'get_f1', 'get_label_ranking_average_precision_score', 'get_srcc', 'get_group_metrics', 'output_res']
+__all__ = ['CUTOFF', 'get_mean_auc', 'get_pcc', 'get_f1', 'get_accuracy_score', 'get_label_ranking_average_precision_score', 'get_srcc', 'get_group_metrics', 'output_res']
 
 CUTOFF = 0.5
 
 
 # code
-def get_auc(targets, scores):
+def get_mean_auc(targets, scores):
+    auc_scores = []
     #return roc_auc_score(targets >= CUTOFF, scores)
-    return roc_auc_score(targets, scores)
+    for i in range(targets.shape[1]):
+        auc = roc_auc_score(targets[:, i], scores[:, i] > CUTOFF)
+        auc_scores.append(auc)
+    return np.mean(auc_scores)
 
 # If one of the variables has constant values (e.g., all zeros or all ones), the correlation coefficient becomes undefined, resulting in nan.
 def get_pcc(targets, scores):
@@ -46,6 +51,9 @@ def get_f1(targets, scores):
 
 def get_srcc(targets, scores):
     return spearmanr(targets, scores)[0]
+
+def get_accuracy_score(targets, scores):
+    return accuracy_score(targets, scores  > CUTOFF)
 
 
 def output_res(DNA_seqs, targets_lists, scores_lists, output_path: Path):
