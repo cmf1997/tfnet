@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from logzero import logger
 from typing import Optional, Mapping, Tuple
-from tfnet.evaluation import get_mean_auc, get_pcc, get_f1, get_label_ranking_average_precision_score, get_accuracy_score
+from tfnet.evaluation import get_mean_auc, get_f1, get_label_ranking_average_precision_score, get_accuracy_score
 
 mps_device = torch.device("mps")
 
@@ -94,7 +94,6 @@ class Model(object):
         #auc = get_auc(targets, scores)
         #print(scores)
         mean_auc = get_mean_auc(targets, scores)
-        pcc = get_pcc(targets, scores)
         f1_score = get_f1(targets, scores)
         lrap = get_label_ranking_average_precision_score(targets, scores)
         accuracy = get_accuracy_score(targets, scores)
@@ -108,7 +107,6 @@ class Model(object):
                         f'train loss: {train_loss:.5f}  '
                         f'mean_auc: {mean_auc:.5f}  '
                         f'f1 score: {f1_score:.5f}  '
-                        f'PCC: {pcc:.5f}  '
                         f'lrap: {lrap:.5f}  '
                         f'accuracy: {accuracy:.5f}'
                         )
