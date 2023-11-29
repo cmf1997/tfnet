@@ -22,7 +22,7 @@ from sklearn.metrics import accuracy_score
 from tfnet.all_tfs import all_tfs
 from logzero import logger
 
-__all__ = ['CUTOFF', 'get_mean_auc', 'get_f1', 'get_accuracy_score', 'get_label_ranking_average_precision_score', 'get_srcc', 'get_group_metrics', 'output_res']
+__all__ = ['CUTOFF', 'get_mean_auc', 'get_mean_f1', 'get_mean_accuracy_score', 'get_label_ranking_average_precision_score', 'get_group_metrics', 'output_res']
 
 CUTOFF = 0.5
 
@@ -41,15 +41,20 @@ def get_label_ranking_average_precision_score(targets, scores):
     return label_ranking_average_precision_score(targets, scores)
 
 
-def get_f1(targets, scores):
-    return f1_score(targets, scores > CUTOFF, average = "samples")
+def get_mean_f1(targets, scores):
+    f1_score_list = []
+    for i in range(targets.shape[0]):
+        f1 = f1_score(targets[i, :], scores[i, :]> CUTOFF, average = "samples")
+        f1_score_list.append(f1)
+    return np.mean(np.array(f1_score_list, dtype=float))
 
 
-def get_srcc(targets, scores):
-    return spearmanr(targets, scores)[0]
-
-def get_accuracy_score(targets, scores):
-    return accuracy_score(targets, scores  > CUTOFF)
+def get_mean_accuracy_score(targets, scores):
+    accuracy_score_list = []
+    for i in range(targets.shape[0]):
+        accuracy = accuracy_score(targets[i, :], scores[i, :]> CUTOFF)
+        accuracy_score_list.append(accuracy)
+    return np.mean(np.array(accuracy_score_list, dtype=float))
 
 
 def output_res(DNA_seqs, targets_lists, scores_lists, output_path: Path):

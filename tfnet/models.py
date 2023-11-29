@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from logzero import logger
 from typing import Optional, Mapping, Tuple
-from tfnet.evaluation import get_mean_auc, get_f1, get_label_ranking_average_precision_score, get_accuracy_score
+from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score
 
 mps_device = torch.device("mps")
 
@@ -88,15 +88,15 @@ class Model(object):
 
     def valid(self, valid_loader, verbose, epoch_idx, train_loss, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.targets
-        #print("valid scores shape",scores.shape, "valid targets shape", targets.shape)
+        print("valid scores shape",scores.shape, "valid targets shape", targets.shape)
         #auc, pcc = get_auc(targets, scores), get_pcc(targets, scores)
 
         #auc = get_auc(targets, scores)
         #print(scores)
         mean_auc = get_mean_auc(targets, scores)
-        f1_score = get_f1(targets, scores)
+        f1_score = get_mean_f1(targets, scores)
         lrap = get_label_ranking_average_precision_score(targets, scores)
-        accuracy = get_accuracy_score(targets, scores)
+        accuracy = get_mean_accuracy_score(targets, scores)
 
 
         if accuracy > self.training_state['best']:
