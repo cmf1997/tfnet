@@ -22,7 +22,7 @@ from sklearn.metrics import accuracy_score
 from tfnet.all_tfs import all_tfs
 from logzero import logger
 
-__all__ = ['CUTOFF', 'get_mean_auc', 'get_mean_f1', 'get_mean_accuracy_score', 'get_label_ranking_average_precision_score', 'get_group_metrics', 'output_res']
+__all__ = ['CUTOFF', 'get_mean_auc', 'get_mean_pcc', 'get_mean_f1', 'get_mean_accuracy_score', 'get_label_ranking_average_precision_score', 'get_group_metrics', 'output_res']
 
 CUTOFF = 0.5
 
@@ -35,6 +35,14 @@ def get_mean_auc(targets, scores):
         auc = roc_auc_score(targets[:, i], scores[:, i] > CUTOFF)
         auc_scores.append(auc)
     return np.mean(auc_scores)
+
+
+def get_mean_pcc(targets, scores):
+    pcc_list = []
+    for i in range(targets.shape[0]):
+        pcc = np.corrcoef(targets[i, :], scores[i, :])
+        pcc_list.append(pcc)
+    return np.mean(np.array(pcc_list, dtype=float))
 
 
 def get_label_ranking_average_precision_score(targets, scores):
