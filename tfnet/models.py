@@ -19,7 +19,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from logzero import logger
 from typing import Optional, Mapping, Tuple
-from tfnet.evaluation import get_auc, get_pcc, get_f1, get_label_ranking_average_precision_score
+from tfnet.evaluation import get_mean_auc, get_pcc, get_f1, get_label_ranking_average_precision_score, get_accuracy_score
 
 mps_device = torch.device("mps")
 
@@ -72,7 +72,7 @@ class Model(object):
     def train(self, train_loader: DataLoader, valid_loader: DataLoader, opt_params: Optional[Mapping] = (),
               num_epochs=20, verbose=True, **kwargs):
         self.get_optimizer(**dict(opt_params))
-        self.training_state['best'] = -1
+        self.training_state['best'] = 0
         for epoch_idx in range(num_epochs):
             train_loss = 0.0
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
@@ -93,20 +93,24 @@ class Model(object):
 
         #auc = get_auc(targets, scores)
         #print(scores)
+        mean_auc = get_mean_auc(targets, scores)
         pcc = get_pcc(targets, scores)
         f1_score = get_f1(targets, scores)
         lrap = get_label_ranking_average_precision_score(targets, scores)
+        accuracy = get_accuracy_score(targets, scores)
 
 
-        if pcc > self.training_state['best']:
+        if accuracy > self.training_state['best']:
             self.save_model()
-            self.training_state['best'] = pcc
+            self.training_state['best'] = accuracy
         if verbose:
             logger.info(f'Epoch: {epoch_idx}  '
                         f'train loss: {train_loss:.5f}  '
-                        f'f1 score: {f1_score:.3f}  '
-                        f'PCC: {pcc:.3f}  '
-                        f'lrap: {lrap:.3f}  '
+                        f'mean_auc: {mean_auc:.5f}  '
+                        f'f1 score: {f1_score:.5f}  '
+                        f'PCC: {pcc:.5f}  '
+                        f'lrap: {lrap:.5f}  '
+                        f'accuracy: {accuracy:.5f}'
                         )
 
     def predict(self, data_loader: DataLoader, valid=False, **kwargs):
