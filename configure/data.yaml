@@ -1,7 +1,7 @@
 tf_seq: data/tf_pseudosequences.txt
 train: data/tf_chip/pos_data_test_mini.txt
-test: data/tf_chip/pos_data_valid.bed
-predict: data/test_tf_binary.txt
+test: data/tf_chip/pos_data_test.txt
+predict: data/tf_chip/pos_data_test.txt
 results: results
 
 input_dir: data/tf_chip/

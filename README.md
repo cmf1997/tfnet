@@ -61,9 +61,14 @@ python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode 5cv # 5 cro
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode lomo # leave one data out cross-validation
 ```
 
+### for Simple CNN model
+```
+python main_simplecnn.py -d configure/data.yaml -m configure/simplecnn.yaml --mode train -n 1 
+```
 
 ### for Baseline Model Testing
 
 ```
-python baseline.py configure/data.yaml
+python baseline_random.py configure/data.yaml
+python baseline_zero.py configure/data.yaml
 ```

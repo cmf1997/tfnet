@@ -8,7 +8,7 @@ model:
   conv_off: [8, 6, 4, 2, 0]
   dropout: 0.25
   linear_size: [32, 16]
-  full_size: [1856, 256,64] # the frist size should be [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
+  full_size: [1856, 256,64] # the frist size should be [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]; 1856 for 4 maxpooling, 7424 for 3
   DNA_pad: 10
 
 padding:

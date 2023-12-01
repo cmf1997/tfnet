@@ -19,7 +19,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from logzero import logger
 from typing import Optional, Mapping, Tuple
-from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_pcc
+from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_pcc
+from tfnet.all_tfs import all_tfs
+import pdb
 
 mps_device = torch.device("mps")
 
@@ -33,12 +35,21 @@ class Model(object):
     """
 
     """
-    def __init__(self, network, model_path, **kwargs):
+    def __init__(self, network, model_path, class_weights_dict = None, **kwargs):
         self.model = self.network = network(**kwargs).to(mps_device)
         # consider Cross Entropy as loss_fn
         #self.loss_fn, self.model_path = nn.CrossEntropyLoss(), Path(model_path)
-
-        self.loss_fn, self.model_path = nn.BCELoss(), Path(model_path)
+        if class_weights_dict:
+            criterion_list = []
+            for label in range(2):
+                class_weights = torch.Tensor([class_weights_dict[cls][label] for cls in range(len(all_tfs))]).to(mps_device)
+                criterion = nn.BCEWithLogitsLoss(weight=class_weights)
+                criterion_list.append(criterion)
+            self.loss_fn = criterion_list
+            self.model_path =  Path(model_path)
+        else:
+            self.loss_fn, self.model_path = nn.BCELoss(), Path(model_path)
+        
         
         self.model_path.parent.mkdir(parents=True, exist_ok=True)
         self.optimizer = None
@@ -47,36 +58,42 @@ class Model(object):
     def get_scores(self, inputs, **kwargs):
         return self.model(*(x.to(mps_device) for x in inputs), **kwargs)
 
-    def loss_and_backward(self, scores, targets):
-        loss = self.loss_fn(scores, targets.to(mps_device))
+    def loss_and_backward(self, scores, targets, class_weights_dict):
+        if class_weights_dict:
+            loss = sum([criterion(scores, targets.to(mps_device)) for criterion in self.loss_fn])
+            
+        else:
+            loss = self.loss_fn(scores, targets.to(mps_device))
+            
+        
         loss.backward()
         return loss
 
-    def train_step(self, inputs: Tuple[torch.Tensor, torch.Tensor], targets: torch.Tensor, **kwargs):
+    def train_step(self, inputs: Tuple[torch.Tensor, torch.Tensor], targets: torch.Tensor, class_weights_dict= None, **kwargs):
         self.optimizer.zero_grad()
         self.model.train()
-        loss = self.loss_and_backward(self.get_scores(inputs, **kwargs), targets)
+        loss = self.loss_and_backward(self.get_scores(inputs, **kwargs), targets, class_weights_dict)
         self.optimizer.step(closure=None)
         return loss.item()
 
     @torch.no_grad()
     def predict_step(self, inputs: Tuple[torch.Tensor, torch.Tensor], **kwargs):
         self.model.eval()
-        return self.get_scores(inputs, **kwargs).cpu()
+        return self.get_scores(inputs, **kwargs).to(mps_device)
 
     def get_optimizer(self, optimizer_cls='Adadelta', weight_decay=1e-3, **kwargs):
         if isinstance(optimizer_cls, str):
             optimizer_cls = getattr(torch.optim, optimizer_cls)
         self.optimizer = optimizer_cls(self.model.parameters(), weight_decay=weight_decay, **kwargs)
 
-    def train(self, train_loader: DataLoader, valid_loader: DataLoader, opt_params: Optional[Mapping] = (),
+    def train(self, train_loader: DataLoader, valid_loader: DataLoader, class_weights_dict, opt_params: Optional[Mapping] = (),
               num_epochs=20, verbose=True, **kwargs):
         self.get_optimizer(**dict(opt_params))
         self.training_state['best'] = 0
         for epoch_idx in range(num_epochs):
             train_loss = 0.0
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
-                train_loss += self.train_step(inputs, targets, **kwargs) * len(targets)
+                train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * len(targets)
             train_loss /= len(train_loader.dataset)
             self.valid(valid_loader, verbose, epoch_idx, train_loss)
         # ---------------------- record loss pcc for each epoch and plot---------------------- #
@@ -93,6 +110,7 @@ class Model(object):
         f1_score = get_mean_f1(targets, scores)
         lrap = get_label_ranking_average_precision_score(targets, scores)
         accuracy = get_mean_accuracy_score(targets, scores)
+        balanced_accuracy = get_mean_balanced_accuracy_score(targets, scores)
         pcc = get_mean_pcc(targets, scores)
 
 
@@ -106,13 +124,14 @@ class Model(object):
                         f'pcc: {pcc:.5f}  '
                         f'f1 score: {f1_score:.5f}  '
                         f'lrap: {lrap:.5f}  '
-                        f'accuracy: {accuracy:.5f}'
+                        f'accuracy: {accuracy:.5f}  '
+                        f'balanced accuracy: {balanced_accuracy:.5f}'
                         )
 
     def predict(self, data_loader: DataLoader, valid=False, **kwargs):
         if not valid:
             self.load_model()
-        return np.concatenate([self.predict_step(data_x, **kwargs)
+        return np.concatenate([self.predict_step(data_x, **kwargs).cpu()
                                for data_x, _ in tqdm(data_loader, leave=False, dynamic_ncols=True)], axis=0)
 
     def save_model(self):

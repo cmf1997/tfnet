@@ -10,10 +10,12 @@
 '''
 
 # here put the import lib
+import numpy as np
+from sklearn.utils.class_weight import compute_class_weight
 from tfnet.all_tfs import all_tfs
 import re
 
-__all__ = ['ACIDS', 'get_tf_name_seq', 'get_data', 'get_binding_data', 'get_seq2logo_data', 'set_DNA_len']
+__all__ = ['ACIDS', 'get_tf_name_seq', 'get_data', 'get_binding_data', 'calculate_class_weights_dict','get_seq2logo_data', 'set_DNA_len']
 
 ACIDS = '0-ACDEFGHIKLMNPQRSTVWY'
 
@@ -47,6 +49,25 @@ def get_data(data_file, tf_name_seq):
                 #data_list.append((DNA_seq, bind_list, all_tfs_seq))
                 data_list.append((DNA_seq, atac_signal, bind_list, all_tfs_seq))
     return data_list
+
+
+def calculate_class_weights_dict(data_file):
+    y_train = np.loadtxt(data_file,dtype=str)
+    true_label = [ y_train[i][2] for i in range(y_train.shape[0])]
+    bind_list = []
+    for i in range(len(true_label)):
+        bind_list.append([float(j) for j in true_label[i].split(',')])
+    bind_list = np.array(bind_list)
+    num_labels = bind_list.shape[1]
+    class_weights_dict = {}
+
+    # Calculate class weights for each binary label independently
+    for label in range(num_labels):
+        classes = np.unique(bind_list[:, label])
+        class_weights = compute_class_weight(class_weight='balanced', classes = classes, y=bind_list[:, label])
+        class_weights_dict[label] = {cls: weight for cls, weight in zip(classes, class_weights)}
+    
+    return class_weights_dict
 
 
 def get_binding_data(data_file, tf_name_seq, peptide_pad=3, core_len=9):

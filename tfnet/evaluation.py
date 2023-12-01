@@ -18,13 +18,13 @@ from scipy.stats import spearmanr
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import label_ranking_average_precision_score
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from tfnet.all_tfs import all_tfs
 from logzero import logger
 
-__all__ = ['CUTOFF', 'get_mean_auc', 'get_mean_pcc', 'get_mean_f1', 'get_mean_accuracy_score', 'get_label_ranking_average_precision_score', 'get_group_metrics', 'output_res']
+__all__ = ['CUTOFF', 'get_mean_auc', 'get_mean_pcc', 'get_mean_f1', 'get_mean_accuracy_score', 'get_mean_balanced_accuracy_score','get_label_ranking_average_precision_score', 'get_group_metrics', 'output_res']
 
-CUTOFF = 0.5
+CUTOFF = 0.7
 
 
 # code
@@ -57,6 +57,14 @@ def get_mean_accuracy_score(targets, scores):
     accuracy_score_list = []
     for i in range(targets.shape[0]):
         accuracy = accuracy_score(targets[i, :], scores[i, :]> CUTOFF)
+        accuracy_score_list.append(accuracy)
+    return np.mean(np.array(accuracy_score_list, dtype=float))
+
+
+def get_mean_balanced_accuracy_score(targets, scores):
+    accuracy_score_list = []
+    for i in range(targets.shape[0]):
+        accuracy = balanced_accuracy_score(targets[i, :], scores[i, :]> CUTOFF)
         accuracy_score_list.append(accuracy)
     return np.mean(np.array(accuracy_score_list, dtype=float))
 
