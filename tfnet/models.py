@@ -40,12 +40,8 @@ class Model(object):
         # consider Cross Entropy as loss_fn
         #self.loss_fn, self.model_path = nn.CrossEntropyLoss(), Path(model_path)
         if class_weights_dict:
-            criterion_list = []
-            for label in range(2):
-                class_weights = torch.Tensor([class_weights_dict[cls][label] for cls in range(len(all_tfs))]).to(mps_device)
-                criterion = nn.BCEWithLogitsLoss(weight=class_weights)
-                criterion_list.append(criterion)
-            self.loss_fn = criterion_list
+
+
             self.model_path =  Path(model_path)
         else:
             self.loss_fn, self.model_path = nn.BCELoss(), Path(model_path)
@@ -60,7 +56,12 @@ class Model(object):
 
     def loss_and_backward(self, scores, targets, class_weights_dict):
         if class_weights_dict:
-            loss = sum([criterion(scores, targets.to(mps_device)) for criterion in self.loss_fn])
+            weight = torch.zeros(targets.shape)  
+            for i in range(targets.shape[0]):
+                for j in range(targets.shape[1]):
+                    weight[i][j] = class_weights_dict[j][int(targets[i][j])]
+            #pdb.set_trace()
+            loss = nn.functional.binary_cross_entropy(scores, targets.to(mps_device), weight.to(mps_device))
             
         else:
             loss = self.loss_fn(scores, targets.to(mps_device))
@@ -114,9 +115,9 @@ class Model(object):
         pcc = get_mean_pcc(targets, scores)
 
 
-        if accuracy > self.training_state['best']:
+        if balanced_accuracy > self.training_state['best']:
             self.save_model()
-            self.training_state['best'] = accuracy
+            self.training_state['best'] = balanced_accuracy
         if verbose:
             logger.info(f'Epoch: {epoch_idx}  '
                         f'train loss: {train_loss:.5f}  '

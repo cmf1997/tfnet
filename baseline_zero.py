@@ -53,7 +53,7 @@ def main():
     metrics.append(get_mean_pcc(bind_list, zero_sequences))
     metrics.append(get_label_ranking_average_precision_score(bind_list, zero_sequences))
     metrics.append(get_mean_accuracy_score(bind_list, zero_sequences))
-    metrics.append(get_mean_balanced_accuracy_score(bind_list, binary_sequences))
+    metrics.append(get_mean_balanced_accuracy_score(bind_list, zero_sequences))
     metrics.append(get_mean_auc(bind_list, zero_sequences))
 
     # calculate matrics include pcc f1 lrsp

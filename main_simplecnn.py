@@ -22,7 +22,7 @@ from logzero import logger
 from tfnet.data_utils import *
 from tfnet.datasets import TFBindDataset
 from tfnet.models import Model
-from tfnet.simple_cnn import SimpleCNN
+from tfnet.networks_simplecnn import SimpleCNN
 from tfnet.evaluation import output_res, CUTOFF
 from tfnet.all_tfs import all_tfs
 
@@ -90,10 +90,8 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
 
     if classweights:
         class_weights_dict = calculate_class_weights_dict(data_cnf['train'])
-        print("yes")
     else :
         class_weights_dict = None
-        print('no')
 
     '''
     if mode is None or mode == 'train' or mode == 'eval':

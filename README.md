@@ -49,6 +49,7 @@ ls data/tf_chip/*bed.gz | awk -F '\_|\.' '{OFS="\t"}{print $0,$2}' > data/tf_chi
 python preprocess.py -d configure/data.yaml -m configure/tfnet.yaml
 ```
 
+### adjust model config file to set classweights
 
 ### for TFNet Training and Testing
 

@@ -7,22 +7,21 @@ model:
   conv_num: [16, 16, 16, 16, 16]
   conv_off: [8, 6, 4, 2, 0]
   dropout: 0.25
-  linear_size: [256, 128, 64, 32, 16, 8]
-  full_size: [512,128,64] # for simple cnn, first number should be linear_size[-1] * 1024 / 4**len(maxpool layer)
+  linear_size: [256, 288, 323, 363, 407, 512]
+  full_size: [2048,64] # for simple cnn
   DNA_pad: 10
 
 padding:
   DNA_len: 1024
   DNA_pad: 10
   tf_len: 39
-  #tf_len: 34
 
 train:
   batch_size: 64
   num_epochs: 10  
   opt_params:
     optimizer_cls: Adadelta
-    lr: 0.1
+    lr: 0.05
     weight_decay: 1e-4
 
 valid:
