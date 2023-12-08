@@ -31,6 +31,24 @@ __all__ = ['Model']
 
 
 # code
+class EarlyStopper:
+    def __init__(self, patience=5, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_validation_loss = float('inf')
+
+    def early_stop(self, validation_loss):
+        if validation_loss < self.min_validation_loss:
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+        elif validation_loss > (self.min_validation_loss + self.min_delta):
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False
+    
+
 class Model(object):
     """
 
@@ -50,6 +68,8 @@ class Model(object):
         self.model_path.parent.mkdir(parents=True, exist_ok=True)
         self.optimizer = None
         self.training_state = {}
+
+        self.early_stopper = EarlyStopper(patience=5, min_delta=0.05)
 
     def get_scores(self, inputs, **kwargs):
         return self.model(*(x.to(mps_device) for x in inputs), **kwargs)
@@ -95,7 +115,11 @@ class Model(object):
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
                 train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * len(targets)
             train_loss /= len(train_loader.dataset)
-            self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
+            balanced_accuracy = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
+            if self.early_stopper.early_stop(balanced_accuracy):
+                logger.info(f'Early Stopping')
+                break
+            
         # ---------------------- record loss pcc for each epoch and plot---------------------- #
 
 
@@ -132,6 +156,7 @@ class Model(object):
                         f'accuracy: {accuracy:.5f}  '
                         f'balanced accuracy: {balanced_accuracy:.5f}'
                         )
+        return balanced_accuracy
 
     def predict(self, data_loader: DataLoader, valid=False, **kwargs):
         if not valid:
