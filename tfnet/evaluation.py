@@ -32,7 +32,7 @@ def get_mean_auc(targets, scores):
     auc_scores = []
     #return roc_auc_score(targets >= CUTOFF, scores)
     for i in range(targets.shape[1]):
-        auc = roc_auc_score(targets[:, i], scores[:, i] > CUTOFF)
+        auc = roc_auc_score(targets[:, i], scores[:, i] )
         auc_scores.append(auc)
     return np.mean(auc_scores)
 

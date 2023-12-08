@@ -126,7 +126,7 @@ class Model(object):
     def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.targets
         #print("valid scores shape",scores.shape, "valid targets shape", targets.shape)
-        #mean_auc = get_mean_auc(targets, scores)
+        mean_auc = get_mean_auc(targets, scores)
         f1_score = get_mean_f1(targets, scores)
         lrap = get_label_ranking_average_precision_score(targets, scores)
         accuracy = get_mean_accuracy_score(targets, scores)
@@ -149,7 +149,7 @@ class Model(object):
             logger.info(f'Epoch: {epoch_idx}  '
                         f'train loss: {train_loss:.5f}  '
                         f'valid loss: {valid_loss:.5f}  ' 
-                        #f'mean_auc: {mean_auc:.5f}  '
+                        f'mean_auc: {mean_auc:.5f}  '
                         f'pcc: {pcc:.5f}  '
                         f'f1 score: {f1_score:.5f}  '
                         f'lrap: {lrap:.5f}  '
