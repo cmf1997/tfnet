@@ -13,6 +13,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import csv
 
 from pathlib import Path
 from torch.utils.data import DataLoader
@@ -125,7 +126,11 @@ class Model(object):
 
     def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.targets
+
+        valid_loss = self.cal_loss(torch.tensor(scores).to(mps_device), torch.tensor(targets), class_weights_dict)
+
         #print("valid scores shape",scores.shape, "valid targets shape", targets.shape)
+        #scores = nn.functional.sigmoid(torch.tensor(scores))
         mean_auc = get_mean_auc(targets, scores)
         f1_score = get_mean_f1(targets, scores)
         lrap = get_label_ranking_average_precision_score(targets, scores)
@@ -140,7 +145,7 @@ class Model(object):
         valid_loss /= len(valid_loader.dataset)
         '''
 
-        valid_loss = self.cal_loss(torch.tensor(scores).to(mps_device), torch.tensor(targets), class_weights_dict)
+        
 
         if balanced_accuracy > self.training_state['best']:
             self.save_model()
@@ -156,12 +161,18 @@ class Model(object):
                         f'accuracy: {accuracy:.5f}  '
                         f'balanced accuracy: {balanced_accuracy:.5f}'
                         )
+            
+        # ---------------------- record data for plot ---------------------- #
+        with open('results/train_record.txt', 'a') as output_file:
+            writer = csv.writer(output_file, delimiter="\t")
+            writer.writerow([epoch_idx, train_loss, valid_loss.item(), mean_auc, pcc, f1_score, lrap, accuracy, balanced_accuracy])
+
         return balanced_accuracy
 
     def predict(self, data_loader: DataLoader, valid=False, **kwargs):
         if not valid:
             self.load_model()
-        return np.concatenate([self.predict_step(data_x, **kwargs).cpu()
+        return np.concatenate([nn.functional.sigmoid(self.predict_step(data_x, **kwargs)).cpu()
                                for data_x, _ in tqdm(data_loader, leave=False, dynamic_ncols=True)], axis=0)
 
     def save_model(self):
