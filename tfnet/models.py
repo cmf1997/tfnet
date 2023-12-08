@@ -80,8 +80,8 @@ class Model(object):
             for i in range(targets.shape[0]):
                 for j in range(targets.shape[1]):
                     weight[i][j] = class_weights_dict[j][int(targets[i][j])]
-            #pdb.set_trace()
-            loss = nn.functional.binary_cross_entropy(scores, targets.to(mps_device), weight.to(mps_device))
+            #loss = nn.functional.binary_cross_entropy(scores, targets.to(mps_device), weight.to(mps_device),reduction='mean')
+            loss = nn.functional.binary_cross_entropy_with_logits(scores, targets.to(mps_device), weight.to(mps_device),reduction='mean')
             
         else:
             loss = self.loss_fn(scores, targets.to(mps_device))

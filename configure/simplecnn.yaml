@@ -24,7 +24,7 @@ train:
     #lr: 0.05
     #weight_decay: 1e-4
     optimizer_cls: Adam
-    lr: 0.1
+    lr: 0.001
 
 valid:
   batch_size: 64

@@ -91,7 +91,8 @@ class SimpleCNN(Network):
             conv_out = full_bn(F.gelu(full(conv_out)))
             if full_index == 1:
                 conv_out = self.dropout(conv_out)
-        return torch.sigmoid(conv_out)
+        #return torch.sigmoid(conv_out)
+        return conv_out
 
     def reset_parameters(self):
         for conv, conv_bn in zip(self.conv, self.conv_bn):
