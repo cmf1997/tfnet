@@ -36,21 +36,11 @@ class SimpleCNN_2d(Network):
     def __init__(self, *, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.5, pooling=True, **kwargs):
         super(SimpleCNN_2d, self).__init__(**kwargs)
 
+        in_channels = [6] + conv_num
+        self.conv = nn.ModuleList(nn.Conv2d(in_channel,out_channel,(1,8),(1,1),padding="same") for in_channel,out_channel in zip(in_channels[:-1],conv_num))
+        self.conv_bn = nn.ModuleList(nn.BatchNorm2d(out_channel) for out_channel in conv_num)          
 
-        self.conv = nn.ModuleList(nn.Conv1d(6, len(all_tfs), cs) for cn, cs in zip(conv_num, conv_size))        
-        self.conv_bn = nn.ModuleList(nn.BatchNorm1d(len(all_tfs)) for cn in conv_num)
-
-        self.conv_off = conv_off
         self.dropout = nn.Dropout(dropout)
-        linear_size = [len(self.conv_off)*len(all_tfs)] + linear_size
-        self.linear = nn.ModuleList([nn.Conv1d(in_s, out_s, 5, padding="same")
-                                     for in_s, out_s in zip(linear_size[:-1], linear_size[1:])])
-        
-        self.linear_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in linear_size[1:]])
-
-        self.linear_s1 = nn.Conv1d(linear_size[-1],256,1)
-        self.linear_bn_s1 = nn.BatchNorm1d(256)
-
 
         #full_size_first = [4096] # [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
         full_size = full_size + [len(all_tfs)]
@@ -62,28 +52,27 @@ class SimpleCNN_2d(Network):
     def forward(self, DNA_x, tf_x, pooling=None, **kwargs):
         DNA_x = super(SimpleCNN_2d, self).forward(DNA_x, tf_x)
         DNA_x = torch.transpose(DNA_x,1,2)
-        pdb.set_trace()
+        DNA_x = DNA_x.unsqueeze(2)
+        # ---------------------- due to  ---------------------- #
+        DNA_x = DNA_x[:,:,:,10:DNA_x.shape[3]-10]
+
+        conv_out = DNA_x
+
+        conv_index = 0
         # ----------------do not apply conv off for same output dim then iconv  ----------------#
-        conv_out = torch.cat([F.gelu(conv_bn(conv(DNA_x[:,:,off: DNA_x.shape[2] - off])))
-                              for conv, conv_bn, off in zip(self.conv, self.conv_bn, self.conv_off)], dim=1)
-        #conv_out = self.dropout(conv_out)
-
-        #torch.Size([64, 145, 1024])
-        conv_out = nn.functional.max_pool1d(conv_out,4,4)
-
-        # ---------------------- covn1d tower with maxpool ---------------------- #
-        linear_index = 0
-        for linear, linear_bn in zip(self.linear, self.linear_bn):
-            linear_index += 1
-            conv_out = linear_bn(linear(conv_out))
-            if linear_index == 1:
-                conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
+        for conv, conv_bn in zip(self.conv, self.conv_bn):
+            conv_index += 1
+            conv_out = conv(conv_out)
+            conv_out = conv_bn(conv_out)
+            conv_out = nn.functional.gelu(conv_out)
+            if conv_index == 4:
+                #conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
+                conv_out = nn.functional.dropout(conv_out,0.5)
             else:
-                conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
-        # ---------------------- last conv1d with size 1  ---------------------- #
-        conv_out = self.linear_bn_s1(self.linear_s1(conv_out))
-        conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
-        conv_out = self.dropout(conv_out)
+                conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
+                conv_out = nn.functional.dropout(conv_out,0.2)
+
+
         # ---------------- flatten and full connect ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)
 
@@ -101,20 +90,13 @@ class SimpleCNN_2d(Network):
             conv.reset_parameters()
             conv_bn.reset_parameters()
             nn.init.normal_(conv_bn.weight.data, mean=1.0, std=0.002)
-        for linear, linear_bn in zip(self.linear, self.linear_bn):
-            nn.init.trunc_normal_(linear.weight, std=0.02)
-            nn.init.zeros_(linear.bias)
-            linear_bn.reset_parameters()
-            nn.init.normal_(linear_bn.weight.data, mean=1.0, std=0.002)
         for full_connect, full_connect_bn in zip(self.full_connect, self.full_connect_bn):
             #full_connect.reset_parameters()
             nn.init.trunc_normal_(full_connect.weight, std=0.02)
             nn.init.zeros_(full_connect.bias)
             full_connect_bn.reset_parameters()
             nn.init.normal_(full_connect_bn.weight.data, mean=1.0, std=0.002)
-        nn.init.trunc_normal_(self.linear_s1.weight, std=0.02)
-        nn.init.zeros_(self.linear_s1.bias)
-        self.linear_bn_s1.reset_parameters()
-        nn.init.normal_(self.linear_bn_s1.weight.data, mean=1.0, std=0.002)
+
+
         
 

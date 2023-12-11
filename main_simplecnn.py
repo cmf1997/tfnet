@@ -161,7 +161,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 model = Model(SimpleCNN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
                               **model_cnf['model'])
                 if not continue_train or not model.model_path.exists():
-                    train(model, data_cnf, model_cnf, train_data=train_data)
+                    train(model, data_cnf, model_cnf, train_data=train_data, class_weights_dict= class_weights_dict)
                 scores_[cv_id == cv_] = test(model, model_cnf, test_data=test_data)
 
                 scores_list.append(scores_)
@@ -188,7 +188,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                                       model_path=model_path.with_stem(F'{model_path.stem}-{name_}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
                                       **model_cnf['model'])
                         if not model.model_path.exists() or not continue_train:
-                            train(model, data_cnf, model_cnf, train_data[train_cv_id != cv_])
+                            train(model, data_cnf, model_cnf, train_data[train_cv_id != cv_], class_weights_dict= class_weights_dict)
                         test_data_ = test_data[test_cv_id == cv_]
                         group_names_ += [x[0] for x in test_data_]
                         truth_ += [x[-1] for x in test_data_]

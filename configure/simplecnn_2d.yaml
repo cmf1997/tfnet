@@ -4,11 +4,11 @@ path: models
 model:
   emb_size: 6
   conv_size: [5, 9, 13, 17, 21]
-  conv_num: [16, 16, 16, 16, 16]
+  conv_num: [64, 128, 256, 512]
   conv_off: [8, 6, 4, 2, 0]
   dropout: 0.25
   linear_size: [256, 288, 323, 363, 407, 512]
-  full_size: [512] # for simple cnn
+  full_size: [8192] # for simple cnn
   DNA_pad: 10
 
 padding:
