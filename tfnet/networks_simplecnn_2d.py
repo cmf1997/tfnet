@@ -14,6 +14,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import pdb
 
 from tfnet.data_utils import ACIDS
 from tfnet.all_tfs import all_tfs
@@ -31,9 +32,9 @@ class Network(nn.Module):
         return DNA_x
 
 
-class SimpleCNN(Network):
+class SimpleCNN_2d(Network):
     def __init__(self, *, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.5, pooling=True, **kwargs):
-        super(SimpleCNN, self).__init__(**kwargs)
+        super(SimpleCNN_2d, self).__init__(**kwargs)
 
 
         self.conv = nn.ModuleList(nn.Conv1d(6, len(all_tfs), cs) for cn, cs in zip(conv_num, conv_size))        
@@ -59,9 +60,9 @@ class SimpleCNN(Network):
         self.reset_parameters()
 
     def forward(self, DNA_x, tf_x, pooling=None, **kwargs):
-        DNA_x = super(SimpleCNN, self).forward(DNA_x, tf_x)
+        DNA_x = super(SimpleCNN_2d, self).forward(DNA_x, tf_x)
         DNA_x = torch.transpose(DNA_x,1,2)
-
+        pdb.set_trace()
         # ----------------do not apply conv off for same output dim then iconv  ----------------#
         conv_out = torch.cat([F.gelu(conv_bn(conv(DNA_x[:,:,off: DNA_x.shape[2] - off])))
                               for conv, conv_bn, off in zip(self.conv, self.conv_bn, self.conv_off)], dim=1)

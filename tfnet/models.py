@@ -70,7 +70,8 @@ class Model(object):
         self.optimizer = None
         self.training_state = {}
 
-        self.early_stopper = EarlyStopper(patience=5, min_delta=0.05)
+        self.early_stopper_1 = EarlyStopper(patience=5, min_delta=0.02)
+        self.early_stopper_2 = EarlyStopper(patience=5, min_delta=0.05)
 
     def get_scores(self, inputs, **kwargs):
         return self.model(*(x.to(mps_device) for x in inputs), **kwargs)
@@ -116,11 +117,13 @@ class Model(object):
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
                 train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * len(targets)
             train_loss /= len(train_loader.dataset)
-            balanced_accuracy = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
-            if self.early_stopper.early_stop(balanced_accuracy):
-                logger.info(f'Early Stopping')
+            balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
+            if self.early_stopper_1.early_stop(valid_loss):
+                logger.info(f'Early Stopping due to valid loss')
                 break
-            
+            if self.early_stopper_2.early_stop(balanced_accuracy):
+                logger.info(f'Early Stopping due to balanced accuracy')
+                break            
         # ---------------------- record loss pcc for each epoch and plot---------------------- #
 
 
@@ -167,7 +170,7 @@ class Model(object):
             writer = csv.writer(output_file, delimiter="\t")
             writer.writerow([epoch_idx, train_loss, valid_loss.item(), mean_auc, pcc, f1_score, lrap, accuracy, balanced_accuracy])
 
-        return balanced_accuracy
+        return balanced_accuracy, valid_loss
 
     def predict(self, data_loader: DataLoader, valid=False, **kwargs):
         if not valid:

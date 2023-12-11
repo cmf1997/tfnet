@@ -1,4 +1,4 @@
-name: SimpleCNN
+name: SimpleCNN_2d
 path: models
 
 model:

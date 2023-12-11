@@ -67,6 +67,7 @@ python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode lomo # leav
 
 ```
 python main_simplecnn.py -d configure/data.yaml -m configure/simplecnn.yaml --mode train -n 1 
+python main_simplecnn_2d.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 1 
 python baseline_random.py configure/data.yaml
 python baseline_zero.py configure/data.yaml
 ```
