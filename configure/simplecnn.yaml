@@ -7,8 +7,8 @@ model:
   conv_num: [16, 16, 16, 16, 16]
   conv_off: [8, 6, 4, 2, 0]
   dropout: 0.25
-  linear_size: [256, 288, 323, 363, 407, 512]
-  full_size: [512] # for simple cnn
+  linear_size: [128, 512]
+  full_size: [2048] # for simple cnn
   DNA_pad: 10
 
 padding:

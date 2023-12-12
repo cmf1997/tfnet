@@ -108,14 +108,14 @@ class Model(object):
             optimizer_cls = getattr(torch.optim, optimizer_cls)
         self.optimizer = optimizer_cls(self.model.parameters(), weight_decay=weight_decay, betas = (0.95,0.9995),**kwargs)
 
-    def train(self, train_loader: DataLoader, valid_loader: DataLoader, class_weights_dict, opt_params: Optional[Mapping] = (),
+    def train(self, train_loader: DataLoader, valid_loader: DataLoader, class_weights_dict=None, opt_params: Optional[Mapping] = (),
               num_epochs=20, verbose=True, **kwargs):
         self.get_optimizer(**dict(opt_params))
         self.training_state['best'] = 0
         for epoch_idx in range(num_epochs):
             train_loss = 0.0
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
-                train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * len(targets)
+                train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) 
             train_loss /= len(train_loader.dataset)
             balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
             if self.early_stopper_1.early_stop(valid_loss):
@@ -129,8 +129,10 @@ class Model(object):
 
     def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.targets
-
-        valid_loss = self.cal_loss(torch.tensor(scores).to(mps_device), torch.tensor(targets), class_weights_dict)
+        if class_weights_dict:
+            valid_loss = self.cal_loss(torch.tensor(scores).to(mps_device), torch.tensor(targets), class_weights_dict)
+        else:
+            valid_loss = self.loss_fn(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
 
         #print("valid scores shape",scores.shape, "valid targets shape", targets.shape)
         #scores = nn.functional.sigmoid(torch.tensor(scores))

@@ -8,7 +8,7 @@ model:
   conv_off: [8, 6, 4, 2, 0]
   dropout: 0.25
   linear_size: [256, 288, 323, 363, 407, 512]
-  full_size: [8192] # for simple cnn
+  full_size: [2048] # for simple cnn
   DNA_pad: 10
 
 padding:
@@ -22,9 +22,9 @@ train:
   opt_params:
     #optimizer_cls: Adadelta
     #lr: 0.05
-    weight_decay: 1e-5
+    weight_decay: 1e-4
     optimizer_cls: Adam
-    lr: 0.0001
+    lr: 0.001
 
 valid:
   batch_size: 64

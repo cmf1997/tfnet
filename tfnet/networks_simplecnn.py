@@ -41,14 +41,14 @@ class SimpleCNN(Network):
 
         self.conv_off = conv_off
         self.dropout = nn.Dropout(dropout)
-        linear_size = [len(self.conv_off)*len(all_tfs)] + linear_size
+        linear_size = [len(conv_num)*len(all_tfs)] + linear_size
         self.linear = nn.ModuleList([nn.Conv1d(in_s, out_s, 5, padding="same")
                                      for in_s, out_s in zip(linear_size[:-1], linear_size[1:])])
         
         self.linear_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in linear_size[1:]])
 
-        self.linear_s1 = nn.Conv1d(linear_size[-1],256,1)
-        self.linear_bn_s1 = nn.BatchNorm1d(256)
+        self.linear_s1 = nn.Conv1d(linear_size[-1],64,1)
+        self.linear_bn_s1 = nn.BatchNorm1d(64)
 
 
         #full_size_first = [4096] # [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
@@ -76,12 +76,16 @@ class SimpleCNN(Network):
             linear_index += 1
             conv_out = linear_bn(linear(conv_out))
             if linear_index == 1:
-                conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
+                #conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
+                conv_out = F.gelu(nn.functional.avg_pool1d(conv_out,2,2))
             else:
-                conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
+                #conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
+                conv_out = F.gelu(nn.functional.avg_pool1d(conv_out,2,2))
+
         # ---------------------- last conv1d with size 1  ---------------------- #
         conv_out = self.linear_bn_s1(self.linear_s1(conv_out))
-        conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
+        #conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
+        conv_out = F.gelu(nn.functional.avg_pool1d(conv_out,2,2))
         conv_out = self.dropout(conv_out)
         # ---------------- flatten and full connect ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)
