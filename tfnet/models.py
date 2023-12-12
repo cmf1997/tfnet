@@ -22,6 +22,7 @@ from logzero import logger
 from typing import Optional, Mapping, Tuple
 from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_pcc
 from tfnet.all_tfs import all_tfs
+import matplotlib.pyplot as plt
 import pdb
 
 mps_device = torch.device("mps")
@@ -171,6 +172,27 @@ class Model(object):
         with open('results/train_record.txt', 'a') as output_file:
             writer = csv.writer(output_file, delimiter="\t")
             writer.writerow([epoch_idx, train_loss, valid_loss.item(), mean_auc, pcc, f1_score, lrap, accuracy, balanced_accuracy])
+
+        loss_data = np.loadtxt('results/train_record.txt')
+        if len(loss_data.shape) != 1:
+            f = plt.figure() 
+            f.set_figwidth(18) 
+            f.set_figheight(4) 
+            plt.subplot(1, 4, 1)
+            plt.plot(loss_data[:,1], label='train_loss')
+            plt.plot(loss_data[:,2], label='valid_loss')
+            plt.legend(loc='best')
+            plt.subplot(1, 4, 2)
+            plt.plot(loss_data[:,3], label='mean_auc')
+            plt.legend(loc='best')
+            plt.subplot(1, 4, 3)           
+            plt.plot(loss_data[:,5], label='f1')
+            plt.legend(loc='best')
+            plt.subplot(1, 4, 4)     
+            plt.plot(loss_data[:,8], label='balanced accuracy')
+            plt.legend(loc='best')
+            plt.savefig('results/train.pdf')
+            plt.close()
 
         return balanced_accuracy, valid_loss
 
