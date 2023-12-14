@@ -223,8 +223,6 @@ def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative
         stop = int(negative_window.stop)
 
         window_fasta = genome_fasta.fetch(chrom, start, stop)
-
-        window_fasta = genome_fasta.fetch(chrom, start, stop)
         if len(re.findall('[atcgn]', window_fasta.lower())) != len(window_fasta):
             continue
 
@@ -235,7 +233,8 @@ def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative
         else:
             atac_signal = atac_data.values(chrom,start,stop)
 
-        atac_signal = atac_data.values(chrom,start,stop)
+        atac_signal = np.array(atac_data.values(chrom,start,stop))
+        atac_signal[np.isnan(atac_signal)] = 0
         atac_signal = np.array(atac_signal, dtype=str)
         atac_signal = ','.join(atac_signal)
 
