@@ -151,7 +151,8 @@ def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive,
         target_array = np.array(target_array, dtype=str)
         target_array = ','.join(target_array)
 
-        atac_signal = atac_data.values(chrom,start,stop)
+        atac_signal = np.array(atac_data.values(chrom,start,stop))
+        atac_signal[np.isnan(atac_signal)] = 0
         atac_signal = np.array(atac_signal, dtype=str)
         atac_signal = ','.join(atac_signal)
 
