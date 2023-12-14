@@ -37,11 +37,10 @@ class SimpleCNN_2d(Network):
         super(SimpleCNN_2d, self).__init__(**kwargs)
 
         in_channels = [6] + conv_num
-        self.conv = nn.ModuleList(nn.Conv2d(in_channel,out_channel,(1,8),(1,1),padding="same") for in_channel,out_channel in zip(in_channels[:-1],conv_num))
+        self.conv = nn.ModuleList(nn.Conv2d(in_channel,out_channel,(1,9),(1,1),padding="same") for in_channel,out_channel in zip(in_channels[:-1],conv_num))
         self.conv_bn = nn.ModuleList(nn.BatchNorm2d(out_channel) for out_channel in conv_num)          
 
         self.conv_len = len(conv_num)
-
         self.dropout = nn.Dropout(dropout)
 
         self.conv_s1 = nn.Conv2d(512,128,(1,1),(1,1))
@@ -54,6 +53,7 @@ class SimpleCNN_2d(Network):
         self.reset_parameters()
 
     def forward(self, DNA_x, tf_x, pooling=None, **kwargs):
+        #pdb.set_trace()
         DNA_x = super(SimpleCNN_2d, self).forward(DNA_x, tf_x)
         DNA_x = torch.transpose(DNA_x,1,2)
         DNA_x = DNA_x.unsqueeze(2)
@@ -66,6 +66,7 @@ class SimpleCNN_2d(Network):
         # ----------------do not apply conv off for same output dim then iconv  ----------------#
         for conv, conv_bn in zip(self.conv, self.conv_bn):
             conv_index += 1
+            #conv_out = nn.functional.gelu(conv_out)
             conv_out = conv(conv_out)
             conv_out = nn.functional.gelu(conv_out)
             conv_out = conv_bn(conv_out)
@@ -81,7 +82,7 @@ class SimpleCNN_2d(Network):
                 #conv_out = nn.functional.avg_pool2d(conv_out,(1,4),(1,4))
                 conv_out = nn.functional.dropout(conv_out,0.2)
 
-        conv_out = self.conv_s1(conv_out)
+        #conv_out = self.conv_s1(conv_out)
 
         # ---------------- flatten and full connect ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)

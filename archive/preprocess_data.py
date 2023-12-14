@@ -13,6 +13,8 @@ EP300,TAF1 were removed due to absent of DBD
 '''
 
 # here put the import lib
+
+# code
 from ruamel.yaml import YAML
 from pybedtools import BedTool, Interval
 import pybedtools
@@ -30,7 +32,6 @@ import random
 
 import pdb
 
-# code
 def get_genome_bed(genome_sizes_file):
     genome_sizes_info = np.loadtxt(genome_sizes_file, dtype=str)
     chroms = list(genome_sizes_info[:,0])
@@ -56,6 +57,7 @@ def make_blacklist(blacklist_file, genome_sizes_file, genome_window_size):
         blacklist2.append(Interval(chrom, size - genome_window_size, size))
     blacklist2 = BedTool(blacklist2)
     blacklist = blacklist.cat(blacklist2)
+    pdb.set_trace()
     return blacklist
 
 
@@ -74,6 +76,7 @@ def get_chip_beds(input_dir):
         merged_chip_bed = merged_chip_bed.sort()
     else:
         merged_chip_bed = chip_beds[0]
+    pdb.set_trace()
     return tfs, chip_beds, merged_chip_bed
 
 
@@ -111,7 +114,7 @@ def load_chip_multiTask(input_dir, genome_sizes_file, genome_window_size, genome
 
     negative_windows = genome_windows.intersect(nonnegative_regions_bed, wa=True, v=True, sorted=True, output='data/tf_chip/negative_windows.bed')
 
-    return tfs, positive_windows, y_positive, negative_windows,nonnegative_regions_bed
+    return tfs, positive_windows, y_positive, negative_windows
 
 
 def chroms_filter(feature, chroms):
@@ -164,25 +167,15 @@ def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive,
         else:
             positive_data_train = [window_fasta, atac_signal, target_array]
             write_single_result('pos_data_train',positive_data_train, result_filefolder)
-    
 
     genome_fasta.close()
 
 
-
-def subset_chroms(chroms, bed):
-    result = bed.filter(chroms_filter, chroms).saveas()
-    return BedTool(result.fn)
-
-
-
-def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, atac_data, result_filefolder):
+def make_neg_features_multiTask(genome_sizes_file, negative_windows, valid_chroms, test_chroms, genome_fasta_file, atac_data, result_filefolder):
     chroms, chroms_sizes, genome_bed = get_genome_bed(genome_sizes_file)
     train_chroms = chroms
     for chrom in valid_chroms + test_chroms:
         train_chroms.remove(chrom)
-    
-    genome_bed_train, genome_bed_valid, genome_bed_test = [subset_chroms(chroms_set, genome_bed) for chroms_set in (train_chroms, valid_chroms, test_chroms)]
     # ---------------------- target array is composite of a list of 0 ---------------------- #
     target_array = [0 for i in range(len(all_tfs))]
     target_array = np.array(target_array, dtype=str)
@@ -190,32 +183,8 @@ def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative
 
     genome_fasta = pysam.Fastafile(genome_fasta_file)
 
-    # ---------------------- use shuffle to generate negative windows ---------------------- #
-    positive_windows_train = subset_chroms(train_chroms, positive_windows)
-    positive_windows_valid = subset_chroms(valid_chroms, positive_windows)
-    positive_windows_test = subset_chroms(test_chroms, positive_windows)
-
-    negative_windows_train = positive_windows_train.shuffle(g=genome_sizes_file,
-                                                            incl=genome_bed_train.fn,
-                                                            excl=nonnegative_regions_bed.fn,
-                                                            noOverlapping=False,
-                                                            seed=np.random.randint(-214783648, 2147483647))
-
-
-    negative_windows_valid = positive_windows_valid.shuffle(g=genome_sizes_file,
-                                                            incl=genome_bed_valid.fn,
-                                                            excl=nonnegative_regions_bed.fn,
-                                                            noOverlapping=False,
-                                                            seed=np.random.randint(-214783648, 2147483647))
-    
-    negative_windows_test = positive_windows_test.shuffle(g=genome_sizes_file,
-                                                            incl=genome_bed_test.fn,
-                                                            excl=nonnegative_regions_bed.fn,
-                                                            noOverlapping=False,
-                                                            seed=np.random.randint(-214783648, 2147483647))
-    
-    negative_windows = BedTool.cat(negative_windows_train, negative_windows_valid, negative_windows_test, postmerge=False)
     for negative_window in negative_windows:
+        # ---------------------- check the name of chrom, pass if chr1 chr2 ... pdb if chr19_gl000208_random ... ---------------------- #
         if len(negative_window.chrom) > 8:
             pdb.set_trace()
         chrom = negative_window.chrom
@@ -242,14 +211,13 @@ def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative
         if chrom in test_chroms:
             negative_data_test = [window_fasta, atac_signal, target_array]
             write_single_result('neg_data_test',negative_data_test, result_filefolder)
+
         elif chrom in valid_chroms:
             negative_data_valid = [window_fasta, atac_signal, target_array]
             write_single_result('neg_data_valid',negative_data_valid, result_filefolder)
         else:
             negative_data_train = [window_fasta, atac_signal, target_array]
             write_single_result('neg_data_train',negative_data_train, result_filefolder)
-
-
 
 
 @click.command()
@@ -281,18 +249,14 @@ def main(data_cnf, model_cnf):
     pybedtools.set_tempdir('/Users/cmf/Downloads/tmp')
 
     blacklist = make_blacklist(blacklist_file, genome_sizes_file, genome_window_size)
-    tfs, positive_windows, y_positive, _ ,nonnegative_regions_bed= load_chip_multiTask(input_dir,genome_sizes_file, genome_window_size, genome_window_step, blacklist)
+    tfs, positive_windows, y_positive, _ = load_chip_multiTask(input_dir,genome_sizes_file, genome_window_size, genome_window_step, blacklist)
     
     # ---------------------- random sample the negative data to match the size of positive ---------------------- #
-    #os.system("shuf -n {} data/tf_chip/negative_windows.bed > data/tf_chip/shuf_negative_windows.bed".format(100000))
-    #negative_windows = BedTool("data/tf_chip/shuf_negative_windows.bed") 
+    os.system("shuf -n {} data/tf_chip/negative_windows.bed > data/tf_chip/shuf_negative_windows.bed".format(100000))
+    negative_windows = BedTool("data/tf_chip/shuf_negative_windows.bed") 
 
     make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, atac_data, result_filefolder)
-    make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, atac_data, result_filefolder)
-
-    os.system("cat {}pos_data_train.txt {}neg_data_train.txt > {}data_train.txt".format(result_filefolder,result_filefolder,result_filefolder))
-    os.system("cat {}pos_data_valid.txt {}neg_data_valid.txt > {}data_valid.txt".format(result_filefolder,result_filefolder,result_filefolder))
-    os.system("cat {}pos_data_test.txt {}neg_data_test.txt > {}data_test.txt".format(result_filefolder,result_filefolder,result_filefolder))
+    make_neg_features_multiTask(genome_sizes_file, negative_windows, valid_chroms, test_chroms, genome_fasta_file, atac_data, result_filefolder)
 
 
 if __name__ == '__main__':
