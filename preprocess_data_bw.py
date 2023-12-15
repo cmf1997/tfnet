@@ -124,7 +124,8 @@ def write_single_result(filename, tfs_bind_data, result_filefolder):
     with open(result_filefolder + filename +'.txt', 'a') as output_file:
         writer = csv.writer(output_file, delimiter="\t")
         window_fasta, bw_signal, target_array = tfs_bind_data
-        writer.writerow([window_fasta] + [bw_signal[index] for index in range(len(bw_signal))] + [target_array])
+        bw_signal = [bw_signal[index] for index in range(len(bw_signal))]
+        writer.writerow([window_fasta, bw_signal, target_array])
 
 
 def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder):
@@ -159,8 +160,7 @@ def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive,
         for index in range(len(bigwig_data)):
             mappability_signal[index] = np.array(bigwig_data[index].values(chrom,start,stop))
             mappability_signal[index][np.isnan(mappability_signal[index])] = 0
-            mappability_signal[index] = np.array(mappability_signal[index], dtype=str)
-            mappability_signal[index] = ','.join(mappability_signal[index])   
+            mappability_signal[index] = ','.join(map(str,mappability_signal[index]))
 
         # ---------------------- write pos data ---------------------- #
         if chrom in test_chroms:
@@ -184,7 +184,7 @@ def subset_chroms(chroms, bed):
 
 
 
-def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, atac_data, map_data, result_filefolder):
+def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder):
     chroms, chroms_sizes, genome_bed = get_genome_bed(genome_sizes_file)
     train_chroms = chroms
     for chrom in valid_chroms + test_chroms:
@@ -234,26 +234,26 @@ def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative
         if len(re.findall('[atcgn]', window_fasta.lower())) != len(window_fasta):
             continue
 
-        try:
-            atac_data.values(chrom,start,stop)
-        except RuntimeError:
-            continue
-        else:
-            atac_signal = atac_data.values(chrom,start,stop)
-
-        atac_signal = np.array(atac_data.values(chrom,start,stop))
-        atac_signal[np.isnan(atac_signal)] = 0
-        atac_signal = np.array(atac_signal, dtype=str)
-        atac_signal = ','.join(atac_signal)
+        # ---------------------- bigwig signal ---------------------- #
+        mappability_signal = {}
+        for index in range(len(bigwig_data)):
+            try:
+                bigwig_data[index].values(chrom,start,stop)
+            except RuntimeError:
+                continue
+            else:
+                mappability_signal[index] = np.array(bigwig_data[index].values(chrom,start,stop))
+                mappability_signal[index][np.isnan(mappability_signal[index])] = 0
+                mappability_signal[index] = ','.join(map(str,mappability_signal[index]))
 
         if chrom in test_chroms:
-            negative_data_test = [window_fasta, atac_signal, target_array]
+            negative_data_test = [window_fasta, mappability_signal, target_array]
             write_single_result('neg_data_test',negative_data_test, result_filefolder)
         elif chrom in valid_chroms:
-            negative_data_valid = [window_fasta, atac_signal, target_array]
+            negative_data_valid = [window_fasta, mappability_signal, target_array]
             write_single_result('neg_data_valid',negative_data_valid, result_filefolder)
         else:
-            negative_data_train = [window_fasta, atac_signal, target_array]
+            negative_data_train = [window_fasta, mappability_signal, target_array]
             write_single_result('neg_data_train',negative_data_train, result_filefolder)
 
     genome_fasta.close()

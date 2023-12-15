@@ -35,3 +35,21 @@ with open("data/tf_pseudosequences.txt", "w") as fp:
     writer = csv.writer(fp, delimiter="\t")
     for key, value in tf_name_seq.items():
         writer.writerow([key, value])
+
+
+import ast
+with open('pos_data_valid.txt') as fp:
+    bw_array = []
+    for line in fp:
+        DNA_seq, bw_signal, bind_list  = line.split('\t')
+        bw_signal = ast.literal_eval(bw_signal)
+        bw_signal = np.array(bw_signal)
+        for i in range(bw_signal.shape[0]):
+            bw_array.append([float(i) for i in bw_signal[i].split(",")])
+
+
+        #bw_signal = np.array(bw_signal,dtype=float)
+        
+
+
+data_list = ast.literal_eval(data_str)
