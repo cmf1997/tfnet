@@ -116,7 +116,7 @@ class Model(object):
         for epoch_idx in range(num_epochs):
             train_loss = 0.0
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
-                train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) 
+                train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
             train_loss /= len(train_loader.dataset)
             balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
             if self.early_stopper_1.early_stop(valid_loss):
