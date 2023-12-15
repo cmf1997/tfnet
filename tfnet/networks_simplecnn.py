@@ -32,7 +32,7 @@ class Network(nn.Module):
 
 
 class SimpleCNN(Network):
-    def __init__(self, *, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.5, pooling=True, **kwargs):
+    def __init__(self, *, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.2, pooling=True, **kwargs):
         super(SimpleCNN, self).__init__(**kwargs)
 
 
@@ -77,10 +77,10 @@ class SimpleCNN(Network):
             conv_out = linear_bn(linear(conv_out))
             if linear_index == 1:
                 #conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
-                conv_out = F.gelu(nn.functional.avg_pool1d(conv_out,2,2))
+                conv_out = F.gelu(nn.functional.avg_pool1d(conv_out,4,4))
             else:
                 #conv_out = F.gelu(nn.functional.max_pool1d(conv_out,2,2))
-                conv_out = F.gelu(nn.functional.avg_pool1d(conv_out,2,2))
+                conv_out = F.gelu(nn.functional.avg_pool1d(conv_out,4,4))
 
         # ---------------------- last conv1d with size 1  ---------------------- #
         conv_out = self.linear_bn_s1(self.linear_s1(conv_out))

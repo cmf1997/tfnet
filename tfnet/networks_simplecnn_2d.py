@@ -73,7 +73,7 @@ class SimpleCNN_2d(Network):
 
             if conv_index == self.conv_len:
                 #conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
-                conv_out = nn.functional.dropout(conv_out,0.5)
+                conv_out = nn.functional.dropout(conv_out,0.2)
             elif conv_index == 1:
                 conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
                 conv_out = nn.functional.dropout(conv_out,0.2)             
