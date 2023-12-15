@@ -123,11 +123,11 @@ def chroms_filter(feature, chroms):
 def write_single_result(filename, tfs_bind_data, result_filefolder):
     with open(result_filefolder + filename +'.txt', 'a') as output_file:
         writer = csv.writer(output_file, delimiter="\t")
-        window_fasta, atac_signal, target_array = tfs_bind_data
-        writer.writerow([window_fasta, atac_signal, target_array])
+        window_fasta, bw_signal, target_array = tfs_bind_data
+        writer.writerow([window_fasta] + [bw_signal[index] for index in range(len(bw_signal))] + [target_array])
 
 
-def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, atac_data, result_filefolder):
+def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder):
     chroms, chroms_sizes, genome_bed = get_genome_bed(genome_sizes_file)
     train_chroms = chroms
     for chrom in valid_chroms + test_chroms:
@@ -143,27 +143,34 @@ def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive,
         start = int(positive_window.start)
         stop = int(positive_window.stop)
 
+        # ---------------------- sequences ---------------------- #
         window_fasta = genome_fasta.fetch(chrom, start, stop)
         if len(re.findall('[atcgn]', window_fasta.lower())) != len(window_fasta):
             continue
-
+        
+        # ---------------------- targets ---------------------- #
         target_array = np.array(target_array, dtype=int)
         target_array = np.array(target_array, dtype=str)
         target_array = ','.join(target_array)
 
-        atac_signal = np.array(atac_data.values(chrom,start,stop))
-        atac_signal[np.isnan(atac_signal)] = 0
-        atac_signal = np.array(atac_signal, dtype=str)
-        atac_signal = ','.join(atac_signal)
 
+        # ---------------------- bigwig signal ---------------------- #
+        mappability_signal = {}
+        for index in range(len(bigwig_data)):
+            mappability_signal[index] = np.array(bigwig_data[index].values(chrom,start,stop))
+            mappability_signal[index][np.isnan(mappability_signal[index])] = 0
+            mappability_signal[index] = np.array(mappability_signal[index], dtype=str)
+            mappability_signal[index] = ','.join(mappability_signal[index])   
+
+        # ---------------------- write pos data ---------------------- #
         if chrom in test_chroms:
-            positive_data_test = [window_fasta, atac_signal, target_array]
+            positive_data_test = [window_fasta, mappability_signal, target_array]
             write_single_result('pos_data_test',positive_data_test, result_filefolder)
         elif chrom in valid_chroms:
-            positive_data_valid = [window_fasta, atac_signal, target_array]
+            positive_data_valid = [window_fasta, mappability_signal, target_array]
             write_single_result('pos_data_valid',positive_data_valid, result_filefolder)
         else:
-            positive_data_train = [window_fasta, atac_signal, target_array]
+            positive_data_train = [window_fasta, mappability_signal, target_array]
             write_single_result('pos_data_train',positive_data_train, result_filefolder)
     
 
@@ -177,7 +184,7 @@ def subset_chroms(chroms, bed):
 
 
 
-def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, atac_data, result_filefolder):
+def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, atac_data, map_data, result_filefolder):
     chroms, chroms_sizes, genome_bed = get_genome_bed(genome_sizes_file)
     train_chroms = chroms
     for chrom in valid_chroms + test_chroms:
@@ -253,6 +260,7 @@ def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative
 
 
 
+
 @click.command()
 @click.option('-d', '--data-cnf', type=click.Path(exists=True))
 @click.option('-m', '--model-cnf', type=click.Path(exists=True))
@@ -262,10 +270,13 @@ def main(data_cnf, model_cnf):
 
     input_dir = data_cnf['input_dir']
 
-    atac_file = data_cnf['atac_file']
-    atac_data = pyBigWig.open(atac_file)
-    # ---------------------- consider adjust the value of atac signal to 0-1 by dividing the max ---------------------- #
-    atac_signal_max = atac_data.header()['maxVal']
+
+    bw_file = data_cnf['bigwig_file']
+    bigwig_data = {}
+    for index, single_bw_file in enumerate(bw_file):
+        bigwig_data[index] = pyBigWig.open(single_bw_file)
+        
+
 
     genome_window_size = model_cnf['padding']['DNA_len']
     genome_window_step = data_cnf['genome_window_step']
@@ -277,14 +288,14 @@ def main(data_cnf, model_cnf):
     valid_chroms = data_cnf['valid_chroms']
     test_chroms = data_cnf['test_chroms']
 
-    genome_fasta_file = data_cnf['genome_fasta_file']
-
-    pybedtools.set_tempdir('/Users/cmf/Downloads/tmp')
-
     if os.path.exists(result_filefolder + 'pos_data_train.txt') or os.path.exists(result_filefolder + 'pos_data_test.txt') or os.path.exists(result_filefolder + 'pos_data_valid.txt'):
         print(f'#-------------------------------------------------#')
         print(f'result data already exsit, delete before regenerate')
         exit()
+
+    genome_fasta_file = data_cnf['genome_fasta_file']
+
+    pybedtools.set_tempdir('/Users/cmf/Downloads/tmp')
 
     blacklist = make_blacklist(blacklist_file, genome_sizes_file, genome_window_size)
     tfs, positive_windows, y_positive, _ ,nonnegative_regions_bed= load_chip_multiTask(input_dir,genome_sizes_file, genome_window_size, genome_window_step, blacklist)
@@ -293,8 +304,8 @@ def main(data_cnf, model_cnf):
     #os.system("shuf -n {} data/tf_chip/negative_windows.bed > data/tf_chip/shuf_negative_windows.bed".format(100000))
     #negative_windows = BedTool("data/tf_chip/shuf_negative_windows.bed") 
 
-    make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, atac_data, result_filefolder)
-    make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, atac_data, result_filefolder)
+    make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
+    make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
 
     os.system("cat {}pos_data_train.txt {}neg_data_train.txt > {}data_train.txt".format(result_filefolder,result_filefolder,result_filefolder))
     os.system("cat {}pos_data_valid.txt {}neg_data_valid.txt > {}data_valid.txt".format(result_filefolder,result_filefolder,result_filefolder))
