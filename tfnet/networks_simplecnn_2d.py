@@ -33,10 +33,10 @@ class Network(nn.Module):
 
 
 class SimpleCNN_2d(Network):
-    def __init__(self, *, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.5, pooling=True, **kwargs):
+    def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.5, pooling=True, **kwargs):
         super(SimpleCNN_2d, self).__init__(**kwargs)
 
-        in_channels = [6] + conv_num
+        in_channels = [int(emb_size)] + conv_num  # depend on embedding
         self.conv = nn.ModuleList(nn.Conv2d(in_channel,out_channel,(1,9),(1,1),padding="same") for in_channel,out_channel in zip(in_channels[:-1],conv_num))
         self.conv_bn = nn.ModuleList(nn.BatchNorm2d(out_channel) for out_channel in conv_num)          
 
@@ -73,7 +73,7 @@ class SimpleCNN_2d(Network):
 
             if conv_index == self.conv_len:
                 #conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
-                conv_out = nn.functional.dropout(conv_out,0.2)
+                conv_out = nn.functional.dropout(conv_out,0.5)
             elif conv_index == 1:
                 conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
                 conv_out = nn.functional.dropout(conv_out,0.2)             

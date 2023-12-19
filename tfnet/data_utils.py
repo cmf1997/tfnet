@@ -62,7 +62,7 @@ def get_data(data_file, tf_name_seq):
 
 def calculate_class_weights_dict(data_file):
     y_train = np.loadtxt(data_file,dtype=str)
-    true_label = [ y_train[i][2] for i in range(y_train.shape[0])]
+    true_label = [ y_train[i][-1] for i in range(y_train.shape[0])]
     bind_list = []
     for i in range(len(true_label)):
         bind_list.append([float(j) for j in true_label[i].split(',')])

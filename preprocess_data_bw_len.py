@@ -77,39 +77,40 @@ def get_chip_beds(input_dir):
     return tfs, chip_beds, merged_chip_bed
 
 
-def intersect_count(chip_bed, windows_file):
+def intersect_count(chip_bed, windows_file, target_window_size):
     windows = BedTool(windows_file)
-    chip_bedgraph = windows.intersect(chip_bed, wa=True, c=True, F=1, sorted=True)
+    chip_bedgraph = windows.intersect(chip_bed, wa=True, c=True, f=1.0*(target_window_size/2+1)/target_window_size, sorted=True)
     bed_counts = [i.count for i in chip_bedgraph]
     return bed_counts
 
 
-def load_chip_multiTask(input_dir, genome_sizes_file, genome_window_size, genome_window_step, blacklist):
+def load_chip_multiTask(input_dir, genome_sizes_file, target_window_size, genome_window_size, genome_window_step, blacklist):
     tfs, chip_beds, merged_chip_bed = get_chip_beds(input_dir)
     # ---------------------- Removing peaks outside of X chromosome and autosomes ---------------------- #
     chroms, chroms_sizes, genome_bed = get_genome_bed(genome_sizes_file)
     merged_chip_bed = merged_chip_bed.intersect(genome_bed, u=True, sorted=True)
 
-    genome_windows = BedTool().window_maker(g=genome_sizes_file, w=genome_window_size,
+    genome_windows = BedTool().window_maker(g=genome_sizes_file, w=target_window_size,
                                             s=genome_window_step)
     
     genome_windows = genome_windows.sort()
 
     # ---------------------- Extracting windows that overlap at least one ChIP interval ---------------------- #
-    positive_windows = genome_windows.intersect(merged_chip_bed, u=True, F=1, sorted=True)
+    positive_windows = genome_windows.intersect(merged_chip_bed, u=True, f=1.0*(target_window_size/2+1)/target_window_size, sorted=True) # make sure same f parameter with function intersect_count
     
     # ---------------------- Removing windows that overlap a blacklisted region ---------------------- #
     positive_windows = positive_windows.intersect(blacklist, wa=True, v=True, sorted=True)
 
     # ---------------------- Generate targets ---------------------- #
-    y_positive = parmap.map(intersect_count, chip_beds, positive_windows.fn)
+    y_positive = parmap.map(intersect_count, chip_beds, positive_windows.fn, target_window_size)
     y_positive = np.array(y_positive, dtype=bool).T
     print('Positive matrix sparsity', (~y_positive).sum()*1.0/np.prod(y_positive.shape))
     merged_chip_slop_bed = merged_chip_bed.slop(g=genome_sizes_file, b=genome_window_size)
     # ---------------------- gather negative windows from the genome that do not overlap with a blacklisted or ChIP region ---------------------- #
     nonnegative_regions_bed = merged_chip_slop_bed.cat(blacklist)
 
-    negative_windows = genome_windows.intersect(nonnegative_regions_bed, wa=True, v=True, sorted=True, output='data/tf_chip/negative_windows.bed')
+    negative_windows = genome_windows.intersect(nonnegative_regions_bed, wa=True, v=True, sorted=True)
+
 
     return tfs, positive_windows, y_positive, negative_windows,nonnegative_regions_bed
 
@@ -128,7 +129,7 @@ def write_single_result(filename, tfs_bind_data, result_filefolder):
         writer.writerow([window_fasta, bw_signal, target_array])
 
 
-def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder):
+def make_pos_features_multiTask(genome_sizes_file, genome_window_size, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder):
     chroms, chroms_sizes, genome_bed = get_genome_bed(genome_sizes_file)
     train_chroms = chroms
     for chrom in valid_chroms + test_chroms:
@@ -143,6 +144,9 @@ def make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive,
         chrom = positive_window.chrom
         start = int(positive_window.start)
         stop = int(positive_window.stop)
+        med = int((start + stop) / 2)
+        start = med - int(genome_window_size) / 2
+        stop = med + int(genome_window_size) / 2
 
         # ---------------------- sequences ---------------------- #
         window_fasta = genome_fasta.fetch(chrom, start, stop)
@@ -184,7 +188,7 @@ def subset_chroms(chroms, bed):
 
 
 
-def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder):
+def make_neg_features_multiTask(genome_sizes_file, genome_window_size, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder):
     chroms, chroms_sizes, genome_bed = get_genome_bed(genome_sizes_file)
     train_chroms = chroms
     for chrom in valid_chroms + test_chroms:
@@ -229,10 +233,15 @@ def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative
         chrom = negative_window.chrom
         start = int(negative_window.start)
         stop = int(negative_window.stop)
+        med = int((start + stop) / 2)
+        start = int(med - genome_window_size / 2)
+        stop = int(med + genome_window_size / 2)
 
         window_fasta = genome_fasta.fetch(chrom, start, stop)
         if len(re.findall('[atcgn]', window_fasta.lower())) != len(window_fasta):
             continue
+
+        continue_out = False
 
         # ---------------------- bigwig signal ---------------------- #
         mappability_signal = {}
@@ -240,11 +249,14 @@ def make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative
             try:
                 bigwig_data[index].values(chrom,start,stop)
             except RuntimeError:
+                continue_out = True
                 break
             else:
                 mappability_signal[index] = np.array(bigwig_data[index].values(chrom,start,stop))
                 mappability_signal[index][np.isnan(mappability_signal[index])] = 0
                 mappability_signal[index] = ','.join(map(str,mappability_signal[index]))
+        if continue_out:
+            continue
 
         if chrom in test_chroms:
             negative_data_test = [window_fasta, mappability_signal, target_array]
@@ -277,8 +289,9 @@ def main(data_cnf, model_cnf):
         bigwig_data[index] = pyBigWig.open(single_bw_file)
         
 
-
+    
     genome_window_size = model_cnf['padding']['DNA_len']
+    target_window_size = data_cnf['target_window_size']
     genome_window_step = data_cnf['genome_window_step']
 
     genome_sizes_file = data_cnf['genome_sizes_file']
@@ -298,14 +311,14 @@ def main(data_cnf, model_cnf):
     pybedtools.set_tempdir('/Users/cmf/Downloads/tmp')
 
     blacklist = make_blacklist(blacklist_file, genome_sizes_file, genome_window_size)
-    tfs, positive_windows, y_positive, _ ,nonnegative_regions_bed= load_chip_multiTask(input_dir,genome_sizes_file, genome_window_size, genome_window_step, blacklist)
+    tfs, positive_windows, y_positive, _ ,nonnegative_regions_bed= load_chip_multiTask(input_dir,genome_sizes_file, target_window_size, genome_window_size, genome_window_step, blacklist)
     
     # ---------------------- random sample the negative data to match the size of positive ---------------------- #
     #os.system("shuf -n {} data/tf_chip/negative_windows.bed > data/tf_chip/shuf_negative_windows.bed".format(100000))
     #negative_windows = BedTool("data/tf_chip/shuf_negative_windows.bed") 
 
-    make_pos_features_multiTask(genome_sizes_file, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
-    make_neg_features_multiTask(genome_sizes_file, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
+    make_pos_features_multiTask(genome_sizes_file, genome_window_size, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
+    make_neg_features_multiTask(genome_sizes_file, genome_window_size, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
 
     os.system("cat {}pos_data_train.txt {}neg_data_train.txt > {}data_train.txt".format(result_filefolder,result_filefolder,result_filefolder))
     os.system("cat {}pos_data_valid.txt {}neg_data_valid.txt > {}data_valid.txt".format(result_filefolder,result_filefolder,result_filefolder))

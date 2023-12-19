@@ -17,6 +17,7 @@ from torch.utils.data.dataset import Dataset
 from tqdm import tqdm
 from tfnet.data_utils import ACIDS
 from tfnet.all_tfs import all_tfs
+import pdb
 
 
 __all__ = ["TFBindDataset"]
@@ -24,7 +25,7 @@ __all__ = ["TFBindDataset"]
 
 # code
 class TFBindDataset(Dataset):
-    def __init__(self, data_list, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0):
+    def __init__(self, data_list, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0, target_len=256):
         #self.tf_names, self.DNA_x, self.tf_x, self.targets = [], [], [], []
         self.DNA_x, self.tf_x, self.targets = [], [], []
         #for tf_name, DNA_seq, tf_seq, score in tqdm(data_list, leave=False):
