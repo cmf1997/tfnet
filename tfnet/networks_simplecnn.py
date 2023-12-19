@@ -32,11 +32,11 @@ class Network(nn.Module):
 
 
 class SimpleCNN(Network):
-    def __init__(self, *, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.2, pooling=True, **kwargs):
+    def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.2, pooling=True, **kwargs):
         super(SimpleCNN, self).__init__(**kwargs)
 
 
-        self.conv = nn.ModuleList(nn.Conv1d(6, len(all_tfs), cs) for cn, cs in zip(conv_num, conv_size))        
+        self.conv = nn.ModuleList(nn.Conv1d(int(emb_size), len(all_tfs), cs) for cn, cs in zip(conv_num, conv_size))        
         self.conv_bn = nn.ModuleList(nn.BatchNorm1d(len(all_tfs)) for cn in conv_num)
 
         self.conv_off = conv_off
