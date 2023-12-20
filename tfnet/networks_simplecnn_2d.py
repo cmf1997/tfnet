@@ -57,7 +57,7 @@ class SimpleCNN_2d(Network):
         DNA_x = super(SimpleCNN_2d, self).forward(DNA_x, tf_x)
         DNA_x = torch.transpose(DNA_x,1,2)
         DNA_x = DNA_x.unsqueeze(2)
-        # ---------------------- due to  ---------------------- #
+        # ---------------------- due to padding in dataset.py---------------------- #
         DNA_x = DNA_x[:,:,:,10:DNA_x.shape[3]-10]
 
         conv_out = DNA_x
@@ -92,7 +92,7 @@ class SimpleCNN_2d(Network):
             full_index += 1
             conv_out = full_bn(F.gelu(full(conv_out)))
             if full_index == 1:
-                conv_out = self.dropout(conv_out)
+                conv_out = nn.functional.dropout(conv_out,0.2)
         #return torch.sigmoid(conv_out)
         return conv_out
 

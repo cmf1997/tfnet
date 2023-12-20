@@ -16,10 +16,11 @@ padding:
   DNA_len: 1024
   DNA_pad: 10
   tf_len: 39
+  DNA_N: True
 
 train:
   batch_size: 64
-  num_epochs: 100  
+  num_epochs: 10000  
   opt_params:
     #optimizer_cls: Adadelta
     #lr: 0.05

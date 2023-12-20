@@ -20,7 +20,7 @@ from torch.utils.data.dataloader import DataLoader
 from logzero import logger
 
 from tfnet.data_utils import *
-from tfnet.datasets_bw import TFBindDataset
+from tfnet.datasets_bw_lazy import TFBindDataset
 from tfnet.models import Model
 from tfnet.networks_simplecnn_2d import SimpleCNN_2d
 from tfnet.evaluation import output_res, CUTOFF
@@ -84,7 +84,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     res_path = Path(data_cnf['results'])/f'{model_name}'
     model_cnf.setdefault('ensemble', 20)
     tf_name_seq = get_tf_name_seq(data_cnf['tf_seq'])
-    get_data_fn = partial(get_data, tf_name_seq=tf_name_seq)
+    get_data_fn = partial(get_data, tf_name_seq=tf_name_seq, DNA_N = model_cnf['padding']['DNA_N'])
 
     classweights = model_cnf['classweights']
 
