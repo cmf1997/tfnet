@@ -26,7 +26,7 @@ __all__ = ["TFBindDataset"]
 
 # code
 class TFBindDataset(Dataset):
-    def __init__(self, data_list, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0, target_len=256, DNA_N = False):
+    def __init__(self, data_list, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0, target_len=256, DNA_N = True):
         #self.tf_names, self.DNA_x, self.tf_x, self.targets = [], [], [], []
         self.DNA_x, self.tf_x, self.targets = [], [], []
         #for tf_name, DNA_seq, tf_seq, score in tqdm(data_list, leave=False):
@@ -47,17 +47,20 @@ class TFBindDataset(Dataset):
                 mat = np.zeros((len(DNA_seq),4))
                 for i in range(len(DNA_seq)):
                     mat[i,d[DNA_seq[i]]] = 1
-                    DNA_x = mat[:DNA_len, :4]
-
+                DNA_x = mat[:DNA_len, :4]
             DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
-            
             # ---------------------- bw_list need padding like DNA_x ---------------------- #
+            bw_x = []
             for i in range(len(bw_list)):
                 if DNA_N:
-                    bw_list[i] = [0 for i in range(DNA_pad)] + bw_list[i] + [0 for i in range(DNA_pad)]
-                bw_list[i] = np.expand_dims(bw_list[i],axis=-1)
-                bw_list[i] = torch.tensor(bw_list[i], dtype=torch.float32)
-                DNA_x = torch.cat([DNA_x, bw_list[i]],dim=1)
+                    bw_x.append([0 for i in range(DNA_pad)] + bw_list[i] + [0 for i in range(DNA_pad)])
+                else:
+                    bw_x.append(bw_list[i])
+
+                bw_x[i] = np.array(bw_x[i])
+                bw_x[i] = np.expand_dims(bw_x[i],axis=-1)
+                bw_x[i] = torch.tensor(bw_x[i], dtype=torch.float32)
+                DNA_x = torch.cat([DNA_x, bw_x[i]],dim=1)
             
             #self.DNA_x.append(DNA_x)
             #assert self.DNA_x[-1].shape[1] == DNA_len + DNA_pad * 2
@@ -86,4 +89,4 @@ class TFBindDataset(Dataset):
     def __getitem__(self, item):
         return (self.DNA_x[item], self.tf_x[item]), self.targets[item]
     def __len__(self):
-        return len(self.DNA_x)
+        return len(self.targets)

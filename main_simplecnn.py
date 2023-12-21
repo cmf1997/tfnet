@@ -20,7 +20,7 @@ from torch.utils.data.dataloader import DataLoader
 from logzero import logger
 
 from tfnet.data_utils import *
-from tfnet.datasets import TFBindDataset
+from tfnet.datasets_bw import TFBindDataset
 from tfnet.models import Model
 from tfnet.networks_simplecnn import SimpleCNN
 from tfnet.evaluation import output_res, CUTOFF

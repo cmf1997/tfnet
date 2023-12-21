@@ -68,19 +68,19 @@ class SimpleCNN_2d(Network):
             conv_index += 1
             #conv_out = nn.functional.gelu(conv_out)
             conv_out = conv(conv_out)
-            conv_out = nn.functional.gelu(conv_out)
+            conv_out = nn.functional.relu(conv_out)
             conv_out = conv_bn(conv_out)
 
             if conv_index == self.conv_len:
                 #conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
-                conv_out = nn.functional.dropout(conv_out,0.5)
+                conv_out = nn.functional.dropout(conv_out,0.0)
             elif conv_index == 1:
                 conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
-                conv_out = nn.functional.dropout(conv_out,0.2)             
+                conv_out = nn.functional.dropout(conv_out,0.0)             
             else:
                 conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
                 #conv_out = nn.functional.avg_pool2d(conv_out,(1,4),(1,4))
-                conv_out = nn.functional.dropout(conv_out,0.2)
+                conv_out = nn.functional.dropout(conv_out,0.0)
 
         #conv_out = self.conv_s1(conv_out)
 
@@ -90,9 +90,9 @@ class SimpleCNN_2d(Network):
         full_index = 0
         for full, full_bn in zip(self.full_connect, self.full_connect_bn):
             full_index += 1
-            conv_out = full_bn(F.gelu(full(conv_out)))
+            conv_out = full_bn(F.relu(full(conv_out)))
             if full_index == 1:
-                conv_out = nn.functional.dropout(conv_out,0.2)
+                conv_out = nn.functional.dropout(conv_out,0.0)
         #return torch.sigmoid(conv_out)
         return conv_out
 

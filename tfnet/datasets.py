@@ -26,8 +26,7 @@ __all__ = ["TFBindDataset"]
 
 # code
 class TFBindDataset(Dataset):
-    def __init__(self, data_list, DNA_len=1024, DNA_pad=10, tf_len=39, DNA_N = False, padding_idx=0):
-        pdb.set_trace()
+    def __init__(self, data_list, DNA_len=1024, DNA_pad=10, tf_len=39, DNA_N = False, target_len=None, padding_idx=0):
         #self.tf_names, self.DNA_x, self.tf_x, self.targets = [], [], [], []
         self.DNA_x, self.tf_x, self.targets = [], [], []
         #for tf_name, DNA_seq, tf_seq, score in tqdm(data_list, leave=False):
@@ -54,11 +53,12 @@ class TFBindDataset(Dataset):
             DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
             
             # ---------------------- atac_signal need padding like DNA_x ---------------------- #
+            bw_x = []
             if DNA_N:
-                atac_signal = [0 for i in range(DNA_pad)] + atac_signal + [0 for i in range(DNA_pad)]
-            atac_signal = np.expand_dims(atac_signal,axis=-1)
-            atac_signal = torch.tensor(atac_signal, dtype=torch.float32)
-            DNA_x = torch.cat([DNA_x, atac_signal],dim=1)
+                bw_x.append([0 for i in range(DNA_pad)] + atac_signal + [0 for i in range(DNA_pad)])
+            bw_x = np.expand_dims(bw_x,axis=-1)
+            bw_x = torch.tensor(bw_x, dtype=torch.float32)
+            DNA_x = torch.cat([DNA_x, bw_x],dim=1)
             
             #self.DNA_x.append(DNA_x)
             #assert self.DNA_x[-1].shape[1] == DNA_len + DNA_pad * 2

@@ -45,23 +45,26 @@ def get_data(data_file, tf_name_seq, DNA_N = True):
             # ---------------------- process multiple bigwig file ---------------------- #
             DNA_seq, bw_signal, bind_list  = line.split('\t')
 
-            bw_signal = ast.literal_eval(bw_signal)
-            bw_signal = np.array(bw_signal)
-            for i in range(bw_signal.shape[0]):
-                bw_list.append([float(i) for i in bw_signal[i].split(",")])
-
-
             bind_list = [float(i) for i in bind_list.split(',')]
 
             # ---------------------- encounter w r in dna seq ---------------------- #
             if DNA_N:
                 if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcgn]', DNA_seq.lower())):
                     #data_list.append((DNA_seq, bind_list, all_tfs_seq))
+                    bw_signal = ast.literal_eval(bw_signal)
+                    bw_signal = np.array(bw_signal)
+                    for i in range(bw_signal.shape[0]):
+                        bw_list.append([float(i) for i in bw_signal[i].split(",")])
                     data_list.append((DNA_seq, bw_list, bind_list, all_tfs_seq))
+
             else:
                 if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcg]', DNA_seq.lower())):
-                    #data_list.append((DNA_seq, bind_list, all_tfs_seq))
-                    data_list.append((DNA_seq, bw_list, bind_list, all_tfs_seq))                    
+                    #data_list.append((DNA_seq, bind_list, all_tfs_seq))                        
+                    bw_signal = ast.literal_eval(bw_signal)
+                    bw_signal = np.array(bw_signal)
+                    for i in range(bw_signal.shape[0]):
+                        bw_list.append([float(i) for i in bw_signal[i].split(",")])      
+                    data_list.append((DNA_seq, bw_list, bind_list, all_tfs_seq))   
     return data_list
 
 
