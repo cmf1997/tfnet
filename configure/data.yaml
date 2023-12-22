@@ -1,5 +1,7 @@
 tf_seq: data/tf_pseudosequences.txt
-train: data/tf_chip/pos_data_test_mini.txt.gz
+train: data/tf_chip/pos_data_train_mini.txt.gz
+train_prefix: data/tf_chip/train_mini_
+valid: data/tf_chip/pos_data_valid_mini.txt.gz
 test: data/tf_chip/pos_data_test.txt
 predict: data/tf_chip/pos_data_test.txt
 results: results

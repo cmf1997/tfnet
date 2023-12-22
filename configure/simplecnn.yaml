@@ -20,7 +20,7 @@ padding:
 
 train:
   batch_size: 64
-  num_epochs: 10000  
+  num_epochs: 2
   opt_params:
     #optimizer_cls: Adadelta
     #lr: 0.05

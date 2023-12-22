@@ -60,6 +60,14 @@ python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode predict -n 
 
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode 5cv # 5 cross-validation
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode lomo # leave one data out cross-validation
+
+# split large training dataset for training #
+# split 
+
+# train_prefix in data.yaml
+
+# train
+python main_simplecnn_2d_split.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
 ```
 
 
