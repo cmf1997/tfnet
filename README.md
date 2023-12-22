@@ -65,7 +65,7 @@ python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode lomo # leav
 # split 
 
 # train_prefix in data.yaml
-
+split -l n -d -a 1 data_train.txt data_train_mini_ # where n is the number of lines in each file
 # train
 python main_simplecnn_2d_split.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
 ```

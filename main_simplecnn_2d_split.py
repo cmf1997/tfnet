@@ -30,13 +30,15 @@ import pdb
 
 
 # code
-#def train(model, data_cnf, model_cnf, train_data, valid_data=None, class_weights_dict = None, random_state=1240):
-def train(model, data_cnf, model_cnf, valid_data=None, class_weights_dict_list = None, get_data_fn = None, random_state=1240):
+def train(model, data_cnf, model_cnf, train_data, valid_data=None, class_weights_dict = None, random_state=1240):
     logger.info(f'Start training model {model.model_path}')
     valid_loader = DataLoader(TFBindDataset(valid_data, **model_cnf['padding']),
                               batch_size=model_cnf['valid']['batch_size'])
-    model.train(model_cnf, data_cnf, valid_loader, class_weights_dict_list, get_data_fn, **model_cnf['train'])
-    logger.info(f'Finish training model {model.model_path}')
+    train_loader = DataLoader(TFBindDataset(train_data, **model_cnf['padding']),
+                              batch_size=model_cnf['train']['batch_size'], shuffle=True)
+    
+    model.train(model_cnf, train_loader, valid_loader, class_weights_dict, **model_cnf['train'])
+    #logger.info(f'Finish training model {model.model_path}')
 
 
 def test(model, model_cnf, test_data):
@@ -117,17 +119,17 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         valid_data = get_data_fn(data_cnf['valid']) if 'valid' in data_cnf else None
         for model_id in range(start_id, start_id + num_models):
             if not model_path.with_stem(f'{model_path.stem}-{model_id}').exists():
-                #for index, train_data_split in enumerate(Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*")):
-                    #class_weights_dict = class_weights_dict_list[index]
-                model = Model(SimpleCNN_2d, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict_list = class_weights_dict_list,
+                for index, train_data_split in enumerate(Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*")):
+                    class_weights_dict = class_weights_dict_list[index]
+                    model = Model(SimpleCNN_2d, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                             **model_cnf['model'])
-                    #train_data = get_data_fn(train_data_split) 
-                    #if index == 0:
-                train(model, data_cnf, model_cnf, valid_data=valid_data, class_weights_dict_list = class_weights_dict_list, get_data_fn = get_data_fn)
-                    #else:
-                        #model.load_model()
-                        #logger.info(f'Continue training model: {model_path.stem}-{model_id}')
-                        #train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
+                    train_data = get_data_fn(train_data_split) 
+                    if index == 0:
+                        train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
+                    else:
+                        model.load_model()
+                        logger.info(f'Continue training model: {model_path.stem}-{model_id}')
+                        train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
             else:
                 logger.info(f'Model already exsit: {model_path.stem}-{model_id}')
             

@@ -56,11 +56,11 @@ class Model(object):
     """
 
     """
-    def __init__(self, network, model_path, class_weights_dict_list = None, **kwargs):
+    def __init__(self, network, model_path, class_weights_dict = None, **kwargs):
         self.model = self.network = network(**kwargs).to(mps_device)
         # consider Cross Entropy as loss_fn
         #self.loss_fn, self.model_path = nn.CrossEntropyLoss(), Path(model_path)
-        if class_weights_dict_list:
+        if class_weights_dict:
 
 
             self.model_path =  Path(model_path)
@@ -72,8 +72,8 @@ class Model(object):
         self.optimizer = None
         self.training_state = {}
 
-        self.early_stopper_1 = EarlyStopper(patience=5, min_delta=0.05)
-        self.early_stopper_2 = EarlyStopper(patience=5, min_delta=0.1)
+        self.early_stopper_1 = EarlyStopper(patience=10, min_delta=0.2)
+        self.early_stopper_2 = EarlyStopper(patience=10, min_delta=0.2)
 
     def get_scores(self, inputs, **kwargs):
         return self.model(*(x.to(mps_device) for x in inputs), **kwargs)
@@ -110,24 +110,16 @@ class Model(object):
             optimizer_cls = getattr(torch.optim, optimizer_cls)
         self.optimizer = optimizer_cls(self.model.parameters(), weight_decay=weight_decay, betas = (0.95,0.9995),**kwargs)
 
-    def train(self, model_cnf, data_cnf, valid_loader: DataLoader, class_weights_dict_list=None, get_data_fn=None, opt_params: Optional[Mapping] = (),
+    def train(self, train_loader: DataLoader, valid_loader: DataLoader, class_weights_dict=None, opt_params: Optional[Mapping] = (),
               num_epochs=20, verbose=True, **kwargs):
         self.get_optimizer(**dict(opt_params))
         self.training_state['best'] = 0
         for epoch_idx in range(num_epochs):
             train_loss = 0.0
-            for index, train_data_split in enumerate(Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*")):
-                class_weights_dict = class_weights_dict_list[index]
-                train_data = get_data_fn(train_data_split) 
-                train_loader = DataLoader(TFBindDataset(train_data, **model_cnf['padding']),
-                              batch_size=model_cnf['train']['batch_size'], shuffle=True)
-                #train_loss = 0.0
-                train_loss_each_split = 0.0
-                for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
-                    train_loss_each_split += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
-                train_loss_each_split /= len(train_loader.dataset)
-                train_loss += train_loss_each_split
-            train_loss /= sum(1 for i in Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*"))
+            for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
+                train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
+            train_loss /= len(train_loader.dataset)
+            
             balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
             if self.early_stopper_1.early_stop(valid_loss):
                 logger.info(f'Early Stopping due to valid loss')
@@ -167,7 +159,7 @@ class Model(object):
             self.save_model()
             self.training_state['best'] = balanced_accuracy
 
-        #self.save_cur_model()
+        self.save_cur_model()
 
         if verbose:
             logger.info(f'Epoch: {epoch_idx}  '
@@ -211,14 +203,23 @@ class Model(object):
 
     def predict(self, data_loader: DataLoader, valid=False, **kwargs):
         if not valid:
-            self.load_model()
+            self.load_model(train=False)
         return np.concatenate([nn.functional.sigmoid(self.predict_step(data_x, **kwargs)).cpu()
                                for data_x, _ in tqdm(data_loader, leave=False, dynamic_ncols=True)], axis=0)
 
     def save_model(self):
+        model_path = self.model_path.with_stem(f'{self.model_path.stem}_best')
+        torch.save(self.model.state_dict(), model_path)
+
+    def save_cur_model(self):
         model_path = self.model_path.with_stem(f'{self.model_path.stem}')
         torch.save(self.model.state_dict(), model_path)
 
 
-    def load_model(self):
-        self.model.load_state_dict(torch.load(self.model_path))
+    def load_model(self, train=True):
+        if train:
+            self.model.load_state_dict(torch.load(self.model_path))
+        else:
+            model_path = self.model_path.with_stem(f'{self.model_path.stem}_best')
+            self.model.load_state_dict(torch.load(model_path))
+
