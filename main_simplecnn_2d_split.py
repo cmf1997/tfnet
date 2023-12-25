@@ -30,14 +30,14 @@ import pdb
 
 
 # code
-def train(model, model_cnf, train_data, valid_data=None, class_weights_dict = None, random_state=1240):
+def train(model, data_cnf, model_cnf, train_data, valid_data=None, class_weights_dict = None, random_state=1240):
     logger.info(f'Start training model {model.model_path}')
     valid_loader = DataLoader(TFBindDataset(valid_data, **model_cnf['padding']),
                               batch_size=model_cnf['valid']['batch_size'])
     train_loader = DataLoader(TFBindDataset(train_data, **model_cnf['padding']),
                               batch_size=model_cnf['train']['batch_size'], shuffle=True)
     
-    model.train(model_cnf, train_loader, valid_loader, class_weights_dict, **model_cnf['train'])
+    model.train(train_loader, valid_loader, class_weights_dict, **model_cnf['train'])
     #logger.info(f'Finish training model {model.model_path}')
 
 
