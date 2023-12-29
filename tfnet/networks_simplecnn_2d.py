@@ -41,7 +41,6 @@ class SimpleCNN_2d(Network):
         self.conv_bn = nn.ModuleList(nn.BatchNorm2d(out_channel) for out_channel in conv_num)          
 
         self.conv_len = len(conv_num)
-        self.dropout = nn.Dropout(dropout)
 
         self.conv_s1 = nn.Conv2d(512,128,(1,1),(1,1))
 
@@ -73,7 +72,7 @@ class SimpleCNN_2d(Network):
 
             if conv_index == self.conv_len:
                 #conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
-                conv_out = nn.functional.dropout(conv_out,0.0)
+                conv_out = nn.functional.dropout(conv_out,0.2)
             elif conv_index == 1:
                 conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
                 conv_out = nn.functional.dropout(conv_out,0.0)             
@@ -92,7 +91,7 @@ class SimpleCNN_2d(Network):
             full_index += 1
             conv_out = full_bn(F.relu(full(conv_out)))
             if full_index == 1:
-                conv_out = nn.functional.dropout(conv_out,0.0)
+                conv_out = nn.functional.dropout(conv_out,0.2)
         #return torch.sigmoid(conv_out)
         return conv_out
 

@@ -21,7 +21,7 @@ from logzero import logger
 
 from tfnet.data_utils import *
 from tfnet.datasets_bw import TFBindDataset
-from tfnet.models import Model
+from tfnet.models_split import Model
 from tfnet.networks_simplecnn import SimpleCNN
 from tfnet.evaluation import output_res, CUTOFF
 from tfnet.all_tfs import all_tfs
@@ -32,15 +32,13 @@ import pdb
 # code
 def train(model, data_cnf, model_cnf, train_data, valid_data=None, class_weights_dict = None, random_state=1240):
     logger.info(f'Start training model {model.model_path}')
-    if valid_data is None:
-        train_data, valid_data = train_test_split(train_data, test_size=data_cnf.get('valid', 0.2),
-                                                  random_state=random_state)
-    train_loader = DataLoader(TFBindDataset(train_data, **model_cnf['padding']),
-                              batch_size=model_cnf['train']['batch_size'], shuffle=True)
     valid_loader = DataLoader(TFBindDataset(valid_data, **model_cnf['padding']),
                               batch_size=model_cnf['valid']['batch_size'])
+    train_loader = DataLoader(TFBindDataset(train_data, **model_cnf['padding']),
+                              batch_size=model_cnf['train']['batch_size'], shuffle=True)
+    
     model.train(train_loader, valid_loader, class_weights_dict, **model_cnf['train'])
-    logger.info(f'Finish training model {model.model_path}')
+    #logger.info(f'Finish training model {model.model_path}')
 
 
 def test(model, model_cnf, test_data):
@@ -87,9 +85,10 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     get_data_fn = partial(get_data, tf_name_seq=tf_name_seq, DNA_N = model_cnf['padding']['DNA_N'])
 
     classweights = model_cnf['classweights']
-
     if classweights:
-        class_weights_dict = calculate_class_weights_dict(data_cnf['train'])
+        class_weights_dict_list = []
+        for index, train_data_split in enumerate(Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*")):
+            class_weights_dict_list.append(calculate_class_weights_dict(train_data_split))
     else :
         class_weights_dict = None
 
@@ -117,13 +116,22 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     '''
 
     if mode == "train":
-        train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
-        valid_data = get_data_fn(data_cnf['valid']) if train_data is not None and 'valid' in data_cnf else None
+        valid_data = get_data_fn(data_cnf['valid']) if 'valid' in data_cnf else None
         for model_id in range(start_id, start_id + num_models):
-            model = Model(SimpleCNN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
-                          **model_cnf['model'])
-            if not continue_train or not model.model_path.exists():
-                train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
+            if not model_path.with_stem(f'{model_path.stem}-{model_id}').exists():
+                for index, train_data_split in enumerate(Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*")):
+                    class_weights_dict = class_weights_dict_list[index]
+                    model = Model(SimpleCNN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+                            **model_cnf['model'])
+                    train_data = get_data_fn(train_data_split) 
+                    if index == 0:
+                        train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
+                    else:
+                        model.load_model()
+                        logger.info(f'Continue training model: {model_path.stem}-{model_id}')
+                        train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
+            else:
+                logger.info(f'Model already exsit: {model_path.stem}-{model_id}')
             
     elif mode == 'eval':
         test_data = get_data_fn(data_cnf['test'])

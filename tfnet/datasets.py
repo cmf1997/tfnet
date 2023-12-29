@@ -70,13 +70,13 @@ class TFBindDataset(Dataset):
 
 
             #If bind_list has constant values (e.g., all zeros or all ones), the correlation coefficient becomes undefined, pcc resulting in nan and won't save model
-            if (1 in bind_list) and (0 in bind_list):
-                self.tf_x.append(tf_x)
-                self.targets.append(bind_list)
-                self.DNA_x.append(DNA_x)
-                #pdb.set_trace()
+            #if (1 in bind_list) and (0 in bind_list):
+            self.tf_x.append(tf_x)
+            self.targets.append(bind_list)
+            self.DNA_x.append(DNA_x)
+            #pdb.set_trace()
 
-                assert self.DNA_x[-1].shape[0] == DNA_len + DNA_pad * 2
+            assert self.DNA_x[-1].shape[0] == DNA_len + DNA_pad * 2
 
         #self.DNA_x, self.tf_x = np.asarray(self.DNA_x), np.asarray(self.tf_x)
         #self.DNA_x = np.asarray(self.DNA_x, dtype=np.float32)

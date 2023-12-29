@@ -69,6 +69,10 @@ gunzip -c data_train.txt.gz | shuf | split -l 400000 -d -a 2
 split -l n -d -a 2 data_train.txt data_train_mini_ # where n is the number of lines in each file, 230000 
 # train
 python main_simplecnn_2d_split.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
+
+
+# lazy load data for Dataset
+python main_simplecnn_2d_lazy.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
 ```
 
 

@@ -64,15 +64,15 @@ class Model(object):
 
             self.model_path =  Path(model_path)
         else:
-            self.loss_fn, self.model_path = nn.BCELoss(), Path(model_path)
+            self.loss_fn, self.model_path = nn.BCEWithLogitsLoss(), Path(model_path)
         
         
         self.model_path.parent.mkdir(parents=True, exist_ok=True)
         self.optimizer = None
         self.training_state = {}
 
-        self.early_stopper_1 = EarlyStopper(patience=10, min_delta=0.2)
-        self.early_stopper_2 = EarlyStopper(patience=10, min_delta=0.2)
+        self.early_stopper_1 = EarlyStopper(patience=10, min_delta=0.4)
+        self.early_stopper_2 = EarlyStopper(patience=10, min_delta=0.4)
 
     def get_scores(self, inputs, **kwargs):
         return self.model(*(x.to(mps_device) for x in inputs), **kwargs)
@@ -117,6 +117,7 @@ class Model(object):
             train_loss = 0.0
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
                 train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
+            pdb.set_trace()
             train_loss /= len(train_loader.dataset)
             balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
             if self.early_stopper_1.early_stop(valid_loss):
@@ -130,10 +131,11 @@ class Model(object):
 
     def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.targets
-        if class_weights_dict:
-            valid_loss = self.cal_loss(torch.tensor(scores).to(mps_device), torch.tensor(targets), class_weights_dict)
-        else:
-            valid_loss = self.loss_fn(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
+        #if class_weights_dict:
+        #    valid_loss = self.cal_loss(torch.tensor(scores).to(mps_device), torch.tensor(targets), class_weights_dict)
+        #else:
+        #    valid_loss = self.loss_fn(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
+        valid_loss = torch.nn.functional.binary_cross_entropy_with_logits(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
 
         #print("valid scores shape",scores.shape, "valid targets shape", targets.shape)
         #scores = nn.functional.sigmoid(torch.tensor(scores))

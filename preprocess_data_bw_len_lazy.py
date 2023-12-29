@@ -275,6 +275,129 @@ def make_neg_features_multiTask(genome_sizes_file, genome_window_size, positive_
 
 
 
+
+# ---------------------- make_features_multiTask ---------------------- #
+def write_result(filename, tfs_bind_data, result_filefolder):
+    with open(result_filefolder + filename +'.txt', 'w') as output_file:
+        writer = csv.writer(output_file, delimiter="\t")
+        for chr, start, stop, target_array in tfs_bind_data:
+            writer.writerow([chr, start, stop, target_array])
+
+
+def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, genome_window_size, nonnegative_regions_bed, epochs, valid_chroms, test_chroms, result_filefolder):
+    chroms, chroms_sizes, genome_bed = get_genome_bed(genome_sizes_file)
+    train_chroms = chroms
+    for chrom in valid_chroms + test_chroms:
+        train_chroms.remove(chrom)
+    genome_bed_train, genome_bed_valid, genome_bed_test = [subset_chroms(chroms_set, genome_bed) for chroms_set in (train_chroms, valid_chroms, test_chroms)]
+
+    positive_windows_train = []
+    positive_windows_valid = []
+    positive_windows_test = []
+    positive_data_train = []
+    positive_data_valid = []
+    positive_data_test = []
+    
+    print('Splitting positive windows into training, validation, and testing sets')
+    for positive_window, target_array in zip(positive_windows, y_positive):
+        if len(positive_window.chrom) > 8:
+            pdb.set_trace()
+        chrom = positive_window.chrom
+        start = int(positive_window.start)
+        stop = int(positive_window.stop)
+
+        med = int((start + stop) / 2)
+        start = int(med - int(genome_window_size) / 2)
+        stop = int(med + int(genome_window_size) / 2)
+
+        target_array = np.array(target_array, dtype=int)
+        target_array = np.array(target_array, dtype=str)
+        target_array = ','.join(target_array)
+
+        if chrom in test_chroms:
+            positive_windows_test.append(positive_window)
+            positive_data_test.append((chrom, start, stop, target_array))
+        elif chrom in valid_chroms:
+            positive_windows_valid.append(positive_window)
+            positive_data_valid.append((chrom, start, stop, target_array))
+        else:
+            positive_windows_train.append(positive_window)
+            positive_data_train.append((chrom, start, stop, target_array))
+    
+    positive_windows_train = BedTool(positive_windows_train)
+    positive_windows_valid = BedTool(positive_windows_valid)
+    positive_windows_test = BedTool(positive_windows_test)
+    
+
+    print('Getting negative training examples')
+    negative_windows_train = BedTool.cat(*(epochs*[positive_windows]), postmerge=False)
+    negative_windows_train = negative_windows_train.shuffle(g=genome_sizes_file,
+                                                            incl=genome_bed_train.fn,
+                                                            excl=nonnegative_regions_bed.fn,
+                                                            noOverlapping=False,
+                                                            seed=np.random.randint(-214783648, 2147483647))
+                                                            #seed=np.random.randint(-21478364, 21474836))
+    print('Getting negative validation examples')
+    negative_windows_valid = positive_windows_valid.shuffle(g=genome_sizes_file,
+                                                            incl=genome_bed_valid.fn,
+                                                            excl=nonnegative_regions_bed.fn,
+                                                            noOverlapping=False,
+                                                            seed=np.random.randint(-214783648, 2147483647))
+                                                            #seed=np.random.randint(-21478364, 21474836))
+    print('Getting negative testing examples')
+    negative_windows_test = positive_windows_test.shuffle(g=genome_sizes_file,
+                                                            incl=genome_bed_test.fn,
+                                                            excl=nonnegative_regions_bed.fn,
+                                                            noOverlapping=False,
+                                                            seed=np.random.randint(-214783648, 2147483647))
+                                                            #seed=np.random.randint(-21478364, 21474836))
+
+    # Train
+    print('Extracting data from negative training BEDs')
+    negative_targets = np.zeros(y_positive.shape[1])
+    negative_targets = np.array(negative_targets, dtype=str)
+    negative_targets = ','.join(negative_targets)
+
+    negative_data_train = [(window.chrom, window.start, window.stop, negative_targets)
+                           for window in negative_windows_train]
+
+    # Validation
+    print('Extracting data from negative validation BEDs')
+    negative_data_valid = [(window.chrom, window.start, window.stop, negative_targets)
+                           for window in negative_windows_valid]
+    
+    # Test
+    print('Extracting data from negative testing BEDs')
+    negative_data_test = [(window.chrom, window.start, window.stop, negative_targets)
+                           for window in negative_windows_test]
+
+    num_positive_train_windows = len(positive_data_train)
+    
+    data_valid = negative_data_valid + positive_data_valid
+    data_test = negative_data_test + positive_data_test
+
+    print('Shuffling training data')
+    data_train = []
+    for i in range(epochs):
+        epoch_data = []
+        epoch_data.extend(positive_data_train)
+        epoch_data.extend(negative_data_train[i*num_positive_train_windows:(i+1)*num_positive_train_windows])
+        np.random.shuffle(epoch_data)
+        data_train.extend(epoch_data)
+
+    # ---------------------- write result ---------------------- #
+    write_result("data_train", data_train, result_filefolder)
+    write_result("data_valid", data_valid, result_filefolder)
+    write_result("data_test", data_test, result_filefolder)
+
+    
+# ---------------------- make_features_multiTask ---------------------- #
+
+
+
+
+
+
 @click.command()
 @click.option('-d', '--data-cnf', type=click.Path(exists=True))
 @click.option('-m', '--model-cnf', type=click.Path(exists=True))
@@ -302,6 +425,8 @@ def main(data_cnf, model_cnf):
     result_filefolder = input_dir
     valid_chroms = data_cnf['valid_chroms']
     test_chroms = data_cnf['test_chroms']
+    epochs = model_cnf['train']['num_epochs']
+    genome_window_size = model_cnf['padding']['DNA_len']
 
     if os.path.exists(result_filefolder + 'pos_data_train.txt') or os.path.exists(result_filefolder + 'pos_data_test.txt') or os.path.exists(result_filefolder + 'pos_data_valid.txt'):
         print(f'#-------------------------------------------------#')
@@ -319,12 +444,17 @@ def main(data_cnf, model_cnf):
     #os.system("shuf -n {} data/tf_chip/negative_windows.bed > data/tf_chip/shuf_negative_windows.bed".format(100000))
     #negative_windows = BedTool("data/tf_chip/shuf_negative_windows.bed") 
 
-    make_pos_features_multiTask(genome_sizes_file, genome_window_size, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
-    make_neg_features_multiTask(genome_sizes_file, genome_window_size, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
+    #make_pos_features_multiTask(genome_sizes_file, genome_window_size, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
+    #make_neg_features_multiTask(genome_sizes_file, genome_window_size, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
 
-    os.system("cat {}pos_data_train.txt {}neg_data_train.txt > {}data_train.txt".format(result_filefolder,result_filefolder,result_filefolder))
-    os.system("cat {}pos_data_valid.txt {}neg_data_valid.txt > {}data_valid.txt".format(result_filefolder,result_filefolder,result_filefolder))
-    os.system("cat {}pos_data_test.txt {}neg_data_test.txt > {}data_test.txt".format(result_filefolder,result_filefolder,result_filefolder))
+    #os.system("cat {}pos_data_train.txt {}neg_data_train.txt > {}data_train.txt".format(result_filefolder,result_filefolder,result_filefolder))
+    #os.system("cat {}pos_data_valid.txt {}neg_data_valid.txt > {}data_valid.txt".format(result_filefolder,result_filefolder,result_filefolder))
+    #os.system("cat {}pos_data_test.txt {}neg_data_test.txt > {}data_test.txt".format(result_filefolder,result_filefolder,result_filefolder))
+    make_features_multiTask(genome_sizes_file, positive_windows, y_positive, genome_window_size, nonnegative_regions_bed, epochs, valid_chroms, test_chroms, result_filefolder)
+    #os.system("cd {}".format(result_filefolder))
+    #os.system("gzip {}data_train.txt".format(result_filefolder,result_filefolder))
+    #os.system("gzip {}data_valid.txt".format(result_filefolder,result_filefolder))
+    #os.system("gzip {}data_test.txt".format(result_filefolder,result_filefolder))
 
 
 if __name__ == '__main__':

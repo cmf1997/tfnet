@@ -12,15 +12,15 @@ model:
   DNA_pad: 10
 
 padding:
-  target_len: 256
+  target_len: 200
   DNA_len: 1024
   DNA_pad: 10
   tf_len: 39
   DNA_N: True
 
 train:
-  batch_size: 32
-  num_epochs: 10000
+  batch_size: 64
+  num_epochs: 5
   opt_params:
     #optimizer_cls: Adadelta
     #lr: 0.01
@@ -30,9 +30,9 @@ train:
 
 
 valid:
-  batch_size: 32
+  batch_size: 64
 
 test:
-  batch_size: 32
+  batch_size: 64
 
 classweights: True
