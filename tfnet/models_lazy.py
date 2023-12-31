@@ -22,8 +22,8 @@ from logzero import logger
 from typing import Optional, Mapping, Tuple
 from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_pcc
 from tfnet.all_tfs import all_tfs
-from tfnet.datasets import TFBindDataset
 import matplotlib.pyplot as plt
+import pdb
 import warnings 
 
 warnings.filterwarnings("ignore",category=UserWarning)
@@ -66,15 +66,15 @@ class Model(object):
 
             self.model_path =  Path(model_path)
         else:
-            self.loss_fn, self.model_path = nn.BCELoss(), Path(model_path)
+            self.loss_fn, self.model_path = nn.BCEWithLogitsLoss(), Path(model_path)
         
         
         self.model_path.parent.mkdir(parents=True, exist_ok=True)
         self.optimizer = None
         self.training_state = {}
 
-        self.early_stopper_1 = EarlyStopper(patience=10, min_delta=0.2)
-        self.early_stopper_2 = EarlyStopper(patience=10, min_delta=0.2)
+        self.early_stopper_1 = EarlyStopper(patience=10, min_delta=0.4)
+        self.early_stopper_2 = EarlyStopper(patience=10, min_delta=0.4)
 
     def get_scores(self, inputs, **kwargs):
         return self.model(*(x.to(mps_device) for x in inputs), **kwargs)
@@ -120,7 +120,6 @@ class Model(object):
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
                 train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
             train_loss /= len(train_loader.dataset)
-            
             balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
             if self.early_stopper_1.early_stop(valid_loss):
                 logger.info(f'Early Stopping due to valid loss')
@@ -132,11 +131,12 @@ class Model(object):
 
 
     def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
-        scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.targets
-        if class_weights_dict:
-            valid_loss = self.cal_loss(torch.tensor(scores).to(mps_device), torch.tensor(targets), class_weights_dict)
-        else:
-            valid_loss = self.loss_fn(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
+        scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.bind_list
+        #if class_weights_dict:
+        #    valid_loss = self.cal_loss(torch.tensor(scores).to(mps_device), torch.tensor(targets), class_weights_dict)
+        #else:
+        #    valid_loss = self.loss_fn(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
+        valid_loss = torch.nn.functional.binary_cross_entropy_with_logits(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
 
         #print("valid scores shape",scores.shape, "valid targets shape", targets.shape)
         #scores = nn.functional.sigmoid(torch.tensor(scores))
@@ -145,6 +145,7 @@ class Model(object):
         lrap = get_label_ranking_average_precision_score(targets, scores)
         accuracy = get_mean_accuracy_score(targets, scores)
         balanced_accuracy = get_mean_balanced_accuracy_score(targets, scores)
+        #pcc = get_mean_pcc(targets, scores)
 
         '''     
         valid_loss = 0 
@@ -158,14 +159,12 @@ class Model(object):
         if balanced_accuracy > self.training_state['best']:
             self.save_model()
             self.training_state['best'] = balanced_accuracy
-
-        self.save_cur_model()
-
         if verbose:
             logger.info(f'Epoch: {epoch_idx}  '
                         f'train loss: {train_loss:.5f}  '
                         f'valid loss: {valid_loss:.5f}  ' 
                         f'mean_auc: {mean_auc:.5f}  '
+                        #f'pcc: {pcc:.5f}  '
                         f'f1 score: {f1_score:.5f}  '
                         f'lrap: {lrap:.5f}  '
                         f'accuracy: {accuracy:.5f}  '
@@ -202,23 +201,12 @@ class Model(object):
 
     def predict(self, data_loader: DataLoader, valid=False, **kwargs):
         if not valid:
-            self.load_model(train=False)
+            self.load_model()
         return np.concatenate([nn.functional.sigmoid(self.predict_step(data_x, **kwargs)).cpu()
                                for data_x, _ in tqdm(data_loader, leave=False, dynamic_ncols=True)], axis=0)
 
     def save_model(self):
-        model_path = self.model_path.with_stem(f'{self.model_path.stem}_best')
-        torch.save(self.model.state_dict(), model_path)
+        torch.save(self.model.state_dict(), self.model_path)
 
-    def save_cur_model(self):
-        model_path = self.model_path.with_stem(f'{self.model_path.stem}')
-        torch.save(self.model.state_dict(), model_path)
-
-
-    def load_model(self, train=True):
-        if train:
-            self.model.load_state_dict(torch.load(self.model_path))
-        else:
-            model_path = self.model_path.with_stem(f'{self.model_path.stem}_best')
-            self.model.load_state_dict(torch.load(model_path))
-
+    def load_model(self):
+        self.model.load_state_dict(torch.load(self.model_path))

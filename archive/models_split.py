@@ -22,7 +22,7 @@ from logzero import logger
 from typing import Optional, Mapping, Tuple
 from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_pcc
 from tfnet.all_tfs import all_tfs
-from tfnet.datasets_bw import TFBindDataset
+from tfnet.datasets import TFBindDataset
 import matplotlib.pyplot as plt
 import pdb
 

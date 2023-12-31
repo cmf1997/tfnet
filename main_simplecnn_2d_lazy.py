@@ -20,8 +20,8 @@ from torch.utils.data.dataloader import DataLoader
 from logzero import logger
 
 from tfnet.data_utils import *
-from tfnet.datasets_bw_lazy import TFBindDataset
-from tfnet.models import Model
+from tfnet.datasets_lazy import TFBindDataset
+from tfnet.models_lazy import Model
 from tfnet.networks_simplecnn_2d import SimpleCNN_2d
 from tfnet.evaluation import output_res, CUTOFF
 from tfnet.all_tfs import all_tfs

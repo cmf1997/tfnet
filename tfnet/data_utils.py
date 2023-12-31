@@ -17,6 +17,7 @@ import re
 import ast
 import gzip
 import pysam
+import pdb
 
 __all__ = ['ACIDS', 'get_tf_name_seq', 'get_data', 'get_data_lazy', 'get_binding_data', 'calculate_class_weights_dict','get_seq2logo_data', 'set_DNA_len']
 

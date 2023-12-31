@@ -23,8 +23,9 @@ from typing import Optional, Mapping, Tuple
 from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_pcc
 from tfnet.all_tfs import all_tfs
 import matplotlib.pyplot as plt
-import pdb
+import warnings 
 
+warnings.filterwarnings("ignore",category=UserWarning)
 mps_device = torch.device("mps")
 
 # modifity the initial pcc best to -1, due to small dataset
@@ -117,7 +118,6 @@ class Model(object):
             train_loss = 0.0
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
                 train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
-            pdb.set_trace()
             train_loss /= len(train_loader.dataset)
             balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
             if self.early_stopper_1.early_stop(valid_loss):
@@ -144,7 +144,6 @@ class Model(object):
         lrap = get_label_ranking_average_precision_score(targets, scores)
         accuracy = get_mean_accuracy_score(targets, scores)
         balanced_accuracy = get_mean_balanced_accuracy_score(targets, scores)
-        pcc = get_mean_pcc(targets, scores)
 
         '''     
         valid_loss = 0 
@@ -163,7 +162,6 @@ class Model(object):
                         f'train loss: {train_loss:.5f}  '
                         f'valid loss: {valid_loss:.5f}  ' 
                         f'mean_auc: {mean_auc:.5f}  '
-                        f'pcc: {pcc:.5f}  '
                         f'f1 score: {f1_score:.5f}  '
                         f'lrap: {lrap:.5f}  '
                         f'accuracy: {accuracy:.5f}  '
@@ -173,7 +171,7 @@ class Model(object):
         # ---------------------- record data for plot ---------------------- #
         with open('results/train_record.txt', 'a') as output_file:
             writer = csv.writer(output_file, delimiter="\t")
-            writer.writerow([epoch_idx, train_loss, valid_loss.item(), mean_auc, pcc, f1_score, lrap, accuracy, balanced_accuracy])
+            writer.writerow([epoch_idx, train_loss, valid_loss.item(), mean_auc, f1_score, lrap, accuracy, balanced_accuracy])
 
         loss_data = np.loadtxt('results/train_record.txt')
         if len(loss_data.shape) != 1:
@@ -188,10 +186,10 @@ class Model(object):
             plt.plot(loss_data[:,3], label='mean_auc')
             plt.legend(loc='best')
             plt.subplot(1, 4, 3)           
-            plt.plot(loss_data[:,5], label='f1')
+            plt.plot(loss_data[:,4], label='f1')
             plt.legend(loc='best')
             plt.subplot(1, 4, 4)     
-            plt.plot(loss_data[:,8], label='balanced accuracy')
+            plt.plot(loss_data[:,7], label='balanced accuracy')
             plt.legend(loc='best')
             plt.savefig('results/train.pdf')
             plt.close()

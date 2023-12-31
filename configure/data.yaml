@@ -14,6 +14,6 @@ target_window_size: 200
 valid_chroms: ['chr10']
 test_chroms: ['chr11']
 
-genome_fasta_file: data/genome/genome.fa
-genome_sizes_file: data/tf_chip/hg19.chrom.sizes.reduced
+genome_fasta_file: data/genome/hg19.genome.fa
+genome_sizes_file: data/tf_chip/hg19.autoX.chrom.sizes
 blacklist_file: data/tf_chip/filter_blacklist.bed
