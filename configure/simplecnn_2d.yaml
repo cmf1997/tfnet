@@ -2,7 +2,7 @@ name: SimpleCNN_2d
 path: models
 
 model:
-  emb_size: 6 # depending on number of bw 
+  emb_size: 7 # depending on number of bw 
   conv_size: [5, 9, 13, 17, 21]
   conv_num: [64, 128, 256, 512, 1024]
   conv_off: [8, 6, 4, 2, 0]
