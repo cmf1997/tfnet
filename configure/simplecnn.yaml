@@ -34,4 +34,4 @@ valid:
 test:
   batch_size: 64
   
-classweights: False
+classweights: True
