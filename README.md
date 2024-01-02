@@ -54,7 +54,8 @@ python preprocess_data.py -d configure/data.yaml -m configure/tfnet.yaml
 ### for TFNet Training and Testing
 
 ```
-python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode train -n 5 # train and evaluation on independent test set
+python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode train -n 5
+
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode eval -n 5 # evaluate on test set
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode predict -n 5 # predict on independent data set
 
@@ -69,21 +70,14 @@ gunzip -c data_train.txt.gz | shuf | split -l 400000 -d -a 2
 split -l n -d -a 2 data_train.txt data_train_mini_ # where n is the number of lines in each file, 230000 
 # train
 python main_simplecnn_2d_split.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
-
-
-# lazy load data for Dataset
-python main_lazy.py -d configure/data.yaml -m configure/tfnet.yaml --mode train -n 5
-python main_simplecnn_lazy.py -d configure/data.yaml -m configure/simplecnn.yaml --mode train -n 5
-python main_simplecnn_2d_lazy.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
-
 ```
 
 
 ### for Baseline Model Testing
 
 ```
-python main_simplecnn.py -d configure/data.yaml -m configure/simplecnn.yaml --mode train -n 1 
-python main_simplecnn_2d.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 1 
+python main_simplecnn.py -d configure/data.yaml -m configure/simplecnn.yaml --mode train -n 5
+python main_simplecnn_2d.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
 python baseline_random.py configure/data.yaml
 python baseline_zero.py configure/data.yaml
 ```

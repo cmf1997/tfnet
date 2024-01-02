@@ -23,6 +23,7 @@ from typing import Optional, Mapping, Tuple
 from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_pcc
 from tfnet.all_tfs import all_tfs
 import matplotlib.pyplot as plt
+import pdb
 import warnings 
 
 warnings.filterwarnings("ignore",category=UserWarning)
@@ -130,7 +131,7 @@ class Model(object):
 
 
     def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
-        scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.targets
+        scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.bind_list
         #if class_weights_dict:
         #    valid_loss = self.cal_loss(torch.tensor(scores).to(mps_device), torch.tensor(targets), class_weights_dict)
         #else:
@@ -139,11 +140,12 @@ class Model(object):
 
         #print("valid scores shape",scores.shape, "valid targets shape", targets.shape)
         #scores = nn.functional.sigmoid(torch.tensor(scores))
-        #mean_auc = get_mean_auc(targets, scores)
+        mean_auc = get_mean_auc(targets, scores)
         f1_score = get_mean_f1(targets, scores)
         lrap = get_label_ranking_average_precision_score(targets, scores)
         accuracy = get_mean_accuracy_score(targets, scores)
         balanced_accuracy = get_mean_balanced_accuracy_score(targets, scores)
+        #pcc = get_mean_pcc(targets, scores)
 
         '''     
         valid_loss = 0 
@@ -161,7 +163,8 @@ class Model(object):
             logger.info(f'Epoch: {epoch_idx}  '
                         f'train loss: {train_loss:.5f}  '
                         f'valid loss: {valid_loss:.5f}  ' 
-                        #f'mean_auc: {mean_auc:.5f}  '
+                        f'mean_auc: {mean_auc:.5f}  '
+                        #f'pcc: {pcc:.5f}  '
                         f'f1 score: {f1_score:.5f}  '
                         f'lrap: {lrap:.5f}  '
                         f'accuracy: {accuracy:.5f}  '
@@ -169,7 +172,6 @@ class Model(object):
                         )
             
         # ---------------------- record data for plot ---------------------- #
-        '''
         with open('results/train_record.txt', 'a') as output_file:
             writer = csv.writer(output_file, delimiter="\t")
             writer.writerow([epoch_idx, train_loss, valid_loss.item(), mean_auc, f1_score, lrap, accuracy, balanced_accuracy])
@@ -194,7 +196,6 @@ class Model(object):
             plt.legend(loc='best')
             plt.savefig('results/train.pdf')
             plt.close()
-        '''
 
         return balanced_accuracy, valid_loss
 

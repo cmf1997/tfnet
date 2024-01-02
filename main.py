@@ -35,16 +35,16 @@ def train(model, data_cnf, model_cnf, train_data, valid_data=None, class_weights
     if valid_data is None:
         train_data, valid_data = train_test_split(train_data, test_size=data_cnf.get('valid', 0.2),
                                                   random_state=random_state)
-    train_loader = DataLoader(TFBindDataset(train_data, **model_cnf['padding']),
-                              batch_size=model_cnf['train']['batch_size'], shuffle=True)
-    valid_loader = DataLoader(TFBindDataset(valid_data, **model_cnf['padding']),
+    train_loader = DataLoader(TFBindDataset(train_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
+                              batch_size=model_cnf['train']['batch_size'], shuffle=False)
+    valid_loader = DataLoader(TFBindDataset(valid_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
                               batch_size=model_cnf['valid']['batch_size'])
     model.train(train_loader, valid_loader, class_weights_dict, **model_cnf['train'])
     logger.info(f'Finish training model {model.model_path}')
 
 
-def test(model, model_cnf, test_data):
-    data_loader = DataLoader(TFBindDataset(test_data, **model_cnf['padding']),
+def test(model, data_cnf, model_cnf, test_data):
+    data_loader = DataLoader(TFBindDataset(test_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
                              batch_size=model_cnf['test']['batch_size'])
     return model.predict(data_loader)
 
@@ -84,7 +84,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     res_path = Path(data_cnf['results'])/f'{model_name}'
     model_cnf.setdefault('ensemble', 20)
     tf_name_seq = get_tf_name_seq(data_cnf['tf_seq'])
-    get_data_fn = partial(get_data, tf_name_seq=tf_name_seq, DNA_N = model_cnf['padding']['DNA_N'])
+    get_data_fn = partial(get_data_lazy, tf_name_seq=tf_name_seq, genome_fasta_file= data_cnf['genome_fasta_file'], DNA_N = model_cnf['padding']['DNA_N'])
 
     classweights = model_cnf['classweights']
 
@@ -123,7 +123,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
             model = Model(TFNet, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             if not continue_train or not model.model_path.exists():
-                train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict= class_weights_dict)
+                train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
             
     elif mode == 'eval':
         test_data = get_data_fn(data_cnf['test'])
@@ -142,7 +142,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         for model_id in range(start_id, start_id + num_models):
             model = Model(TFNet, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
-            scores_lists.append(test(model, model_cnf, test_data=predict_data))
+            scores_lists.append(test(model, data_cnf, model_cnf, test_data=predict_data))
         output_res(DNA_seqs, targets_lists, np.mean(scores_lists, axis=0), res_path)
 
     elif mode == '5cv':
@@ -161,7 +161,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 model = Model(TFNet, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
                               **model_cnf['model'])
                 if not continue_train or not model.model_path.exists():
-                    train(model, data_cnf, model_cnf, train_data=train_data, class_weights_dict=class_weights_dict)
+                    train(model, data_cnf, model_cnf, train_data=train_data, class_weights_dict = class_weights_dict)
                 scores_[cv_id == cv_] = test(model, model_cnf, test_data=test_data)
 
                 scores_list.append(scores_)
@@ -188,7 +188,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                                       model_path=model_path.with_stem(F'{model_path.stem}-{name_}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
                                       **model_cnf['model'])
                         if not model.model_path.exists() or not continue_train:
-                            train(model, data_cnf, model_cnf, train_data[train_cv_id != cv_], class_weights_dict = class_weights_dict)
+                            train(model, data_cnf, model_cnf, train_data[train_cv_id != cv_], class_weights_dict=class_weights_dict)
                         test_data_ = test_data[test_cv_id == cv_]
                         group_names_ += [x[0] for x in test_data_]
                         truth_ += [x[-1] for x in test_data_]
