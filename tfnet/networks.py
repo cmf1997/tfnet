@@ -18,6 +18,7 @@ import torch.nn.functional as F
 from tfnet.data_utils import ACIDS
 from tfnet.all_tfs import all_tfs
 from tfnet.modules import *
+import pdb
 
 __all__ = ['TFNet']
 
@@ -60,10 +61,10 @@ class TFNet(Network):
 
     def forward(self, DNA_x, tf_x, pooling=None, **kwargs):
         DNA_x, tf_x = super(TFNet, self).forward(DNA_x, tf_x)
-
         # ---------------- apply conv off for same output dim then iconv  ----------------#
         conv_out = torch.cat([conv_bn(F.relu(conv(DNA_x[:, off: DNA_x.shape[1] - off], tf_x)))
                               for conv, conv_bn, off in zip(self.conv, self.conv_bn, self.conv_off)], dim=1)
+        #conv_out = nn.functional.max_pool1d(conv_out,4,4)
         conv_out = self.dropout(conv_out)
 
         # ---------------- reduce dim 1 by conv1d  ----------------#
@@ -76,6 +77,7 @@ class TFNet(Network):
         # ---------------- reduce dim -1，-2 by maxpool 2d ----------------#
         conv_out_max_pool =[]
         for conv_1 in conv_out.unbind(dim=-1):
+            #conv_1 = F.relu(nn.functional.max_pool1d(conv_1,4,4))
             for max_pool in self.max_pool:
                 conv_1 = F.relu(max_pool(conv_1))
             conv_out_max_pool.append(conv_1)

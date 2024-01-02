@@ -59,11 +59,11 @@ class TFBindDataset(Dataset):
 
                 bw_x[i] = np.array(bw_x[i])
                 bw_x[i] = np.expand_dims(bw_x[i],axis=-1)
-                bw_x_rc = bw_x[i][::-1,:].copy()
+                #bw_x_rc = bw_x[i][::-1,:].copy()
                 bw_x[i] = torch.tensor(bw_x[i], dtype=torch.float32)
-                bw_x_rc = torch.tensor(bw_x_rc, dtype=torch.float32)
+                #bw_x_rc = torch.tensor(bw_x_rc, dtype=torch.float32)
                 DNA_x = torch.cat([DNA_x, bw_x[i]],dim=1)
-                DNA_x = torch.cat([DNA_x, bw_x_rc],dim=1)
+                #DNA_x = torch.cat([DNA_x, bw_x_rc],dim=1)
             
             #self.DNA_x.append(DNA_x)
             #assert self.DNA_x[-1].shape[1] == DNA_len + DNA_pad * 2

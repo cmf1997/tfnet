@@ -34,8 +34,6 @@ class Network(nn.Module):
 class SimpleCNN(Network):
     def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.2, pooling=True, **kwargs):
         super(SimpleCNN, self).__init__(**kwargs)
-
-
         self.conv = nn.ModuleList(nn.Conv1d(int(emb_size), len(all_tfs), cs) for cn, cs in zip(conv_num, conv_size))        
         self.conv_bn = nn.ModuleList(nn.BatchNorm1d(len(all_tfs)) for cn in conv_num)
 
@@ -64,10 +62,9 @@ class SimpleCNN(Network):
         # ----------------do not apply conv off for same output dim then iconv  ----------------#
         conv_out = torch.cat([F.relu(conv_bn(conv(DNA_x[:,:,off: DNA_x.shape[2] - off])))
                               for conv, conv_bn, off in zip(self.conv, self.conv_bn, self.conv_off)], dim=1)
-        #conv_out = self.dropout(conv_out)
-
         #torch.Size([64, 145, 1024])
         conv_out = nn.functional.max_pool1d(conv_out,4,4)
+        conv_out = nn.functional.dropout(conv_out,0.0)
 
         # ---------------------- covn1d tower with maxpool ---------------------- #
         linear_index = 0
@@ -77,9 +74,11 @@ class SimpleCNN(Network):
             if linear_index == 1:
                 #conv_out = F.relu(nn.functional.max_pool1d(conv_out,2,2))
                 conv_out = F.relu(nn.functional.avg_pool1d(conv_out,4,4))
+                conv_out = nn.functional.dropout(conv_out,0.0)
             else:
                 #conv_out = F.relu(nn.functional.max_pool1d(conv_out,2,2))
                 conv_out = F.relu(nn.functional.avg_pool1d(conv_out,4,4))
+                conv_out = nn.functional.dropout(conv_out,0.0)
 
         # ---------------------- last conv1d with size 1  ---------------------- #
         conv_out = self.linear_bn_s1(self.linear_s1(conv_out))

@@ -1,12 +1,14 @@
 tf_seq: data/tf_pseudosequences.txt
 train: data/tf_chip/lazy/data_train_mini.txt.gz
+#train: data/tf_chip/data_valid_shuf_mini.txt.gz
 train_prefix: data/tf_chip/train_mini_
 #valid: data/tf_chip/seq_atac_map_256_data/pos_data_test_shuf_mini_1.txt.gz
 test: data/tf_chip/pos_data_test.txt
 predict: data/tf_chip/pos_data_test.txt
 
-bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig', 'data/genome/genome.genmap.bw']
-#bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig']
+genome_fasta_file: data/genome/hg19.genome.fa
+#bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig', 'data/genome/genome.genmap.bw']
+bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig']
 
 results: results
 
@@ -17,6 +19,5 @@ genome_window_step: 50
 target_window_size: 200
 valid_chroms: ['chr10']
 test_chroms: ['chr11']
-genome_fasta_file: data/genome/hg19.genome.fa
 genome_sizes_file: data/tf_chip/hg19.autoX.chrom.sizes
 blacklist_file: data/tf_chip/filter_blacklist.bed

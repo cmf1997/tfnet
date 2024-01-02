@@ -72,7 +72,10 @@ python main_simplecnn_2d_split.py -d configure/data.yaml -m configure/simplecnn_
 
 
 # lazy load data for Dataset
+python main_lazy.py -d configure/data.yaml -m configure/tfnet.yaml --mode train -n 5
+python main_simplecnn_lazy.py -d configure/data.yaml -m configure/simplecnn.yaml --mode train -n 5
 python main_simplecnn_2d_lazy.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
+
 ```
 
 

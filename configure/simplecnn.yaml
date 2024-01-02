@@ -19,7 +19,7 @@ padding:
   DNA_N: True
 
 train:
-  batch_size: 128
+  batch_size: 64
   num_epochs: 5
   opt_params:
     #optimizer_cls: Adadelta
