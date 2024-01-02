@@ -10,7 +10,7 @@ model:
   #linear_size: [256, 288, 323, 363, 407, 512]
   linear_size: [320,480,960]
 
-  full_size: [4096 ,2048] # for simple cnn
+  full_size: [1024 ,128] # for simple cnn
   DNA_pad: 10
 
 padding:

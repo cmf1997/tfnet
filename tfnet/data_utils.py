@@ -19,7 +19,7 @@ import gzip
 import pysam
 import pdb
 
-__all__ = ['ACIDS', 'get_tf_name_seq', 'get_data', 'get_data_lazy', 'get_binding_data', 'calculate_class_weights_dict','get_seq2logo_data', 'set_DNA_len']
+__all__ = ['ACIDS', 'get_tf_name_seq', 'get_data', 'get_data_lazy', 'get_binding_data', 'calculate_class_weights_dict','get_seq2logo_data', 'set_DNA_len','get_model_parameters']
 
 ACIDS = '0-ACDEFGHIKLMNPQRSTVWY'
 
@@ -130,3 +130,14 @@ def get_binding_data(data_file, tf_name_seq, peptide_pad=3, core_len=9):
 def get_seq2logo_data(data_file, mhc_name, mhc_seq):
     with open(data_file) as fp:
         return [(mhc_name, line.strip(), mhc_seq, 0.0) for line in fp]
+    
+
+def get_model_parameters(model):
+    params = list(model.parameters())
+    k = 0
+    for i in params:
+        l = 1
+        for j in i.size():
+            l*= j
+        k += l
+    print("total:" + str(k))

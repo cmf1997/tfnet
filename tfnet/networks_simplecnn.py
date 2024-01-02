@@ -17,7 +17,8 @@ import torch.nn.functional as F
 
 from tfnet.data_utils import ACIDS
 from tfnet.all_tfs import all_tfs
-#from tfnet.modules import *
+from tfnet.modules import *
+import pdb
 
 __all__ = ['SimpleCNN']
 
@@ -34,22 +35,25 @@ class Network(nn.Module):
 class SimpleCNN(Network):
     def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.2, pooling=True, **kwargs):
         super(SimpleCNN, self).__init__(**kwargs)
-        self.conv = nn.ModuleList(nn.Conv1d(int(emb_size), len(all_tfs), cs) for cn, cs in zip(conv_num, conv_size))        
-        self.conv_bn = nn.ModuleList(nn.BatchNorm1d(len(all_tfs)) for cn in conv_num)
+        self.conv = nn.ModuleList(nn.Conv1d(int(emb_size), cn, cs) for cn, cs in zip(conv_num, conv_size))  
+        self.conv_bn = nn.ModuleList(nn.BatchNorm1d(cn) for cn in conv_num)
 
         self.conv_off = conv_off
-        linear_size = [len(conv_num)*len(all_tfs)] + linear_size
+        linear_size = [sum(conv_num)] + linear_size
+        self.len_linear = len(linear_size)
         self.linear = nn.ModuleList([nn.Conv1d(in_s, out_s, 5, padding="same")
                                      for in_s, out_s in zip(linear_size[:-1], linear_size[1:])])
         
         self.linear_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in linear_size[1:]])
 
+        # adjust out channels 
         self.linear_s1 = nn.Conv1d(linear_size[-1],64,1)
         self.linear_bn_s1 = nn.BatchNorm1d(64)
 
 
         #full_size_first = [4096] # [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
         full_size = full_size + [len(all_tfs)]
+        self.len_full = len(full_size)
         self.full_connect = nn.ModuleList([nn.Linear(in_s, out_s) for in_s, out_s in zip(full_size[:-1], full_size[1:])])
         self.full_connect_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in full_size[1:] ])
 
@@ -64,27 +68,21 @@ class SimpleCNN(Network):
                               for conv, conv_bn, off in zip(self.conv, self.conv_bn, self.conv_off)], dim=1)
         #torch.Size([64, 145, 1024])
         conv_out = nn.functional.max_pool1d(conv_out,4,4)
-        conv_out = nn.functional.dropout(conv_out,0.0)
+        conv_out = nn.functional.dropout(conv_out,0.2)
 
-        # ---------------------- covn1d tower with maxpool ---------------------- #
+        # ---------------------- covn1d tower with pool ---------------------- #
         linear_index = 0
         for linear, linear_bn in zip(self.linear, self.linear_bn):
             linear_index += 1
             conv_out = linear_bn(linear(conv_out))
-            if linear_index == 1:
+            if linear_index == self.len_linear:
                 #conv_out = F.relu(nn.functional.max_pool1d(conv_out,2,2))
                 conv_out = F.relu(nn.functional.avg_pool1d(conv_out,4,4))
-                conv_out = nn.functional.dropout(conv_out,0.0)
-            else:
-                #conv_out = F.relu(nn.functional.max_pool1d(conv_out,2,2))
-                conv_out = F.relu(nn.functional.avg_pool1d(conv_out,4,4))
-                conv_out = nn.functional.dropout(conv_out,0.0)
+                conv_out = nn.functional.dropout(conv_out,0.2)
 
         # ---------------------- last conv1d with size 1  ---------------------- #
         conv_out = self.linear_bn_s1(self.linear_s1(conv_out))
-        #conv_out = F.relu(nn.functional.max_pool1d(conv_out,2,2))
-        conv_out = F.relu(nn.functional.avg_pool1d(conv_out,2,2))
-        conv_out = nn.functional.dropout(conv_out,0.0)
+        conv_out = F.relu(nn.functional.avg_pool1d(conv_out,4,4))
         
         # ---------------- flatten and full connect ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)
@@ -93,9 +91,8 @@ class SimpleCNN(Network):
         for full, full_bn in zip(self.full_connect, self.full_connect_bn):
             full_index += 1
             conv_out = full_bn(F.relu(full(conv_out)))
-            if full_index == 1:
-                conv_out = nn.functional.dropout(conv_out,0.0)
-        #return torch.sigmoid(conv_out)
+            if full_index == self.len_full:
+                conv_out = nn.functional.dropout(conv_out,0.2)
         return conv_out
 
     def reset_parameters(self):

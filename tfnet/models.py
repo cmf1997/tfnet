@@ -59,6 +59,7 @@ class Model(object):
     """
     def __init__(self, network, model_path, class_weights_dict = None, **kwargs):
         self.model = self.network = network(**kwargs).to(mps_device)
+        #pdb.set_trace()
         # consider Cross Entropy as loss_fn
         #self.loss_fn, self.model_path = nn.CrossEntropyLoss(), Path(model_path)
         if class_weights_dict:
