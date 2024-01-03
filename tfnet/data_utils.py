@@ -96,6 +96,7 @@ def get_data_lazy(data_file, tf_name_seq, genome_fasta_file, DNA_N = True):
             else:
                 if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcg]', DNA_seq.lower())):   
                     data_list.append((chr, start, stop, bind_list, all_tfs_seq))
+    genome_fasta.close()
     return data_list
 
 def calculate_class_weights_dict(data_file):

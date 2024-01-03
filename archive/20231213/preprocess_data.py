@@ -218,6 +218,8 @@ def make_neg_features_multiTask(genome_sizes_file, negative_windows, valid_chrom
         else:
             negative_data_train = [window_fasta, atac_signal, target_array]
             write_single_result('neg_data_train',negative_data_train, result_filefolder)
+            
+    genome_fasta.close()
 
 
 @click.command()

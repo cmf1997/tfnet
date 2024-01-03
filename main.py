@@ -23,7 +23,7 @@ from tfnet.data_utils import *
 from tfnet.datasets import TFBindDataset
 from tfnet.models import Model
 from tfnet.networks import TFNet
-from tfnet.evaluation import output_res, CUTOFF
+from tfnet.evaluation import output_eval, output_predict, CUTOFF
 from tfnet.all_tfs import all_tfs
 
 import pdb
@@ -127,23 +127,27 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
             
     elif mode == 'eval':
         test_data = get_data_fn(data_cnf['test'])
-        DNA_seqs, atac_signal, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data]
+        shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
+
+        chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-2] for x in predict_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
             model = Model(TFNet, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             scores_lists.append(test(model, model_cnf, test_data=test_data))
-        output_res(DNA_seqs, targets_lists, np.mean(scores_lists, axis=0), res_path)
+        output_eval(chr, start, stop, targets_lists, np.mean(scores_lists, axis=0), res_path)
     
     elif mode == 'predict':
         predict_data = get_data_fn(data_cnf['predict'])
-        DNA_seqs, atac_signal, targets_lists = [x[0] for x in predict_data], [x[1] for x in predict_data], [x[2] for x in predict_data]
+        shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
+
+        chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-2] for x in predict_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
             model = Model(TFNet, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             scores_lists.append(test(model, data_cnf, model_cnf, test_data=predict_data))
-        output_res(DNA_seqs, targets_lists, np.mean(scores_lists, axis=0), res_path)
+        output_predict(chr, start, stop, np.mean(scores_lists, axis=0), res_path)
 
     elif mode == '5cv':
         data = np.asarray(get_data_fn(data_cnf['train']), dtype=object)

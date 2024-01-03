@@ -2,7 +2,7 @@ tf_seq: data/tf_pseudosequences.txt
 train: data/tf_chip/lazy/data_train_mini.txt.gz
 #train: data/tf_chip/data_valid_shuf_mini.txt.gz
 train_prefix: data/tf_chip/train_mini_
-#valid: data/tf_chip/seq_atac_map_256_data/pos_data_test_shuf_mini_1.txt.gz
+#valid: data/tf_chip/lazy/data_train_valid.txt.gz
 test: data/tf_chip/pos_data_test.txt
 predict: data/tf_chip/pos_data_test.txt
 

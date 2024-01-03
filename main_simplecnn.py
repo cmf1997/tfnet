@@ -23,7 +23,7 @@ from tfnet.data_utils import *
 from tfnet.datasets import TFBindDataset
 from tfnet.models import Model
 from tfnet.networks_simplecnn import SimpleCNN
-from tfnet.evaluation import output_res, CUTOFF
+from tfnet.evaluation import output_eval, output_predict, CUTOFF
 from tfnet.all_tfs import all_tfs
 
 import pdb
@@ -93,28 +93,6 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     else :
         class_weights_dict = None
 
-    '''
-    if mode is None or mode == 'train' or mode == 'eval':
-        train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
-        valid_data = get_data_fn(data_cnf['valid']) if train_data is not None and 'valid' in data_cnf else None
-        if mode is None or mode == 'eval':
-            test_data = get_data_fn(data_cnf['test'])
-            DNA_seqs, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data]
-        else:
-            test_data = DNA_seqs = targets_lists = None
-        scores_lists = []
-        for model_id in range(start_id, start_id + num_models):
-            model = Model(DeepMHCII, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'),
-                          **model_cnf['model'])
-            if train_data is not None:
-                if not continue_train or not model.model_path.exists():
-                    train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data)
-
-            if test_data is not None:
-                scores_lists.append(test(model, model_cnf, test_data=test_data))
-
-                output_res(DNA_seqs, targets_lists, np.mean(scores_lists, axis=0), res_path)
-    '''
 
     if mode == "train":
         train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
@@ -127,27 +105,31 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
             
     elif mode == 'eval':
         test_data = get_data_fn(data_cnf['test'])
-        DNA_seqs, atac_signal, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data]
+        shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
+
+        chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-2] for x in predict_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
             model = Model(SimpleCNN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             scores_lists.append(test(model, model_cnf, test_data=test_data))
-        output_res(DNA_seqs, targets_lists, np.mean(scores_lists, axis=0), res_path)
+        output_eval(chr, start, stop, targets_lists, np.mean(scores_lists, axis=0), res_path)
     
     elif mode == 'predict':
         predict_data = get_data_fn(data_cnf['predict'])
-        DNA_seqs, atac_signal, targets_lists = [x[0] for x in predict_data], [x[1] for x in predict_data], [x[2] for x in predict_data]
+        shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
+        
+        chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-2] for x in predict_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
             model = Model(SimpleCNN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             scores_lists.append(test(model, data_cnf, model_cnf, test_data=predict_data))
-        output_res(DNA_seqs, targets_lists, np.mean(scores_lists, axis=0), res_path)
+        output_predict(chr, start, stop, np.mean(scores_lists, axis=0), res_path)
 
     elif mode == '5cv':
         data = np.asarray(get_data_fn(data_cnf['train']), dtype=object)
-        data_group_name, atac_signal, data_truth = [x[0] for x in data], [x[1] for x in data], [x[2] for x in data]
+        chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-2] for x in predict_data]
         cv_id_len = data.shape[0]
         # ---------------------- generate cv id for use rather than read a input ---------------------- #
         cv_id = generate_cv_id(cv_id_len)
@@ -168,8 +150,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 #pdb.set_trace()
 
                 #output_res(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], np.mean(scores_[cv_id == cv_], axis=0),
-                output_res(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_],          
-                       res_path.with_name(f'{res_path.stem}-5CV'))
+                output_eval(chr[cv_id == cv_], start[cv_id == cv_], stop[cv_id == cv_], targets_lists[cv_id == cv_], np.mean(scores_list[cv_id == cv_], axis=0), res_path.with_name(f'{res_path.stem}-5CV'))
 
 
     elif mode == 'loo' or mode == 'lomo':
@@ -196,36 +177,6 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
             scores_list.append(scores_)
             output_res(group_names_, truth_, np.mean(scores_list, axis=0), res_path.with_name(f'{res_path.stem}-LOMO'))
 
-
-        '''
-    elif mode == 'binding':
-        model_cnf['padding'] = model_cnf['binding']
-        data_list = get_binding_data(data_cnf['binding'], mhc_name_seq, model_cnf['model']['peptide_pad'])
-        (core_pos, scores), correct = get_binding_core(data_list, model_cnf, model_path, start_id, num_models), 0
-        for d, core_pos_, scores_ in zip(data_list, core_pos, scores):
-            (pdb, mhc_name, core), peptide_seq = d[0], d[1]
-            core_ = peptide_seq[core_pos_: core_pos_ + 9]
-            print(pdb, mhc_name, peptide_seq, core, core_, core == core_)
-            if core != core_:
-                for i, s in enumerate(scores_[:len(peptide_seq) - len(core) + 1]):
-                    print(peptide_seq[i: i + len(core)], s)
-            correct += core_ == core
-        logger.info(f'The number of correct prediction is {correct}.')
-        '''
-
-    elif mode == 'seq2logo':
-        assert allele in mhc_name_seq
-        data_list = get_seq2logo_data(data_cnf['seq2logo'], allele, mhc_name_seq[allele])
-        scores_list = []
-        for model_id in range(start_id, start_id + num_models):
-            model = Model(SimpleCNN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False, class_weights_dict = class_weights_dict,
-                          **model_cnf['model'])
-            scores_list.append(test(model, model_cnf, data_list))
-        scores = np.mean(scores_list, axis=0)
-        s_, p_ = scores.max(axis=1), scores.argmax(axis=1)
-        with open(res_path.with_name(f'{res_path.stem}-seq2logo-{allele}.txt'), 'w') as fp:
-            for k in (-s_).argsort()[:int(0.01 * len(s_))]:
-                print(data_list[k][1][p_[k]: p_[k] + 9], file=fp)
 
 
 if __name__ == '__main__':

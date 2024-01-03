@@ -43,14 +43,11 @@ class TFNet(Network):
         self.conv_bn = nn.ModuleList(nn.BatchNorm2d(cn) for cn in conv_num)
 
         self.conv_off = conv_off
-        self.dropout = nn.Dropout(dropout)
 
         linear_size = [sum(conv_num)] + linear_size
         self.linear = nn.ModuleList([nn.Conv1d(in_s, out_s, 1)
                                      for in_s, out_s in zip(linear_size[:-1], linear_size[1:])])
         self.linear_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in linear_size[1:]])
-
-        self.max_pool = nn.ModuleList([nn.MaxPool2d(kernel_size = 2, stride = 2) for i in range(4)])
 
         #full_size_first = [4096] # [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
         full_size = full_size + [len(all_tfs)]
@@ -62,28 +59,38 @@ class TFNet(Network):
     def forward(self, DNA_x, tf_x, pooling=None, **kwargs):
         DNA_x, tf_x = super(TFNet, self).forward(DNA_x, tf_x)
         # ---------------- apply conv off for same output dim then iconv  ----------------#
+        # ---------------------- single result torch.Size([bs, cn, 1024, len(all_tfs)]) ---------------------- #
         conv_out = torch.cat([conv_bn(F.relu(conv(DNA_x[:, off: DNA_x.shape[1] - off], tf_x)))
                               for conv, conv_bn, off in zip(self.conv, self.conv_bn, self.conv_off)], dim=1)
         #conv_out = nn.functional.max_pool1d(conv_out,4,4)
-        conv_out = self.dropout(conv_out)
+        conv_out_max_pool =[]
+        for conv_1 in conv_out.unbind(dim=-1):
+            conv_1 = F.relu(nn.functional.max_pool1d(conv_1,4,4))
+            conv_out_max_pool.append(conv_1)
+        conv_out = torch.stack(conv_out_max_pool,dim=-1)
 
-        # ---------------- reduce dim 1 by conv1d  ----------------#
+        conv_out = nn.functional.dropout(conv_out,0.2)        
+        # torch.Size([bs, sum(conv_num), 1024/4, len(all_tfs)])
+
+        # ---------------- manipulate dim 1 by conv1d  ----------------#
         conv_out_linear =[]
         for conv_1 in conv_out.unbind(dim=-1):
             for linear, linear_bn in zip(self.linear, self.linear_bn):
                 conv_1 = linear_bn(F.relu(linear(conv_1)))
             conv_out_linear.append(conv_1)
         conv_out = torch.stack(conv_out_linear,dim=-1)
-        # ---------------- reduce dim -1，-2 by maxpool 2d ----------------#
+        # torch.Size([bs, linear_size[-1], 1024/4, len(all_tfs)])
+
+        # ---------------- manipulate dim -1，-2 by maxpool 2d ----------------#
         conv_out_max_pool =[]
         for conv_1 in conv_out.unbind(dim=-1):
-            #conv_1 = F.relu(nn.functional.max_pool1d(conv_1,4,4))
-            for max_pool in self.max_pool:
-                conv_1 = F.relu(max_pool(conv_1))
+            conv_1 = F.relu(nn.functional.max_pool1d(conv_1,4,4))
             conv_out_max_pool.append(conv_1)
         conv_out = torch.stack(conv_out_max_pool,dim=-1)
         conv_out = conv_out.view(conv_out.shape[0], -1,conv_out.shape[-1])
-
+        # torch.Size([bs, linear_size[-1] * 1024/4/4, len(all_tfs)])
+        
+        
         # ---------------- flatten and output ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)
         #print("shape before full connect", conv_out.shape)
@@ -91,8 +98,9 @@ class TFNet(Network):
             #print("shape after full connect", full(conv_out).shape)
             conv_out = full_bn(F.relu(full(conv_out)))
             #print("shape after full connect bn", conv_out.shape)
-            conv_out = self.dropout(conv_out)
-        return torch.sigmoid(conv_out)
+            #conv_out = nn.functional.dropout(conv_out,0.2)
+        #return torch.sigmoid(conv_out)
+        return conv_out
 
     def reset_parameters(self):
         super(TFNet, self).reset_parameters()

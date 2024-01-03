@@ -10,4 +10,5 @@
 /data/genome
 /data/tf_chip
 /data/atac
+/data/fimo_out
 .DS_Store
