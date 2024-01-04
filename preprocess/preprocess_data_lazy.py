@@ -159,7 +159,7 @@ def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, tar
         start = int(med - int(genome_window_size) / 2)
         stop = int(med + int(genome_window_size) / 2)
 
-        target_array = np.array(target_array, dtype=int) #
+        target_array = np.array(target_array, dtype=int) 
         target_array = np.array(target_array, dtype=str)
         target_array = ','.join(target_array)
 
@@ -174,8 +174,6 @@ def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, tar
             positive_data_train.append((chrom, start, stop, target_array))
     
     b_size = (genome_window_size - target_window_size)/2
-    #positive_windows_train = BedTool(positive_windows_train)
-    #positive_windows_train = positive_windows_train.slop(g=genome_sizes_file, b=b_size)
     positive_windows = positive_windows.slop(g=genome_sizes_file, b=b_size)
 
     positive_windows_valid = BedTool(positive_windows_valid)
@@ -281,33 +279,19 @@ def main(data_cnf, model_cnf):
     epochs = model_cnf['train']['num_epochs']
     genome_window_size = model_cnf['padding']['DNA_len']
 
-    if os.path.exists(result_filefolder + 'pos_data_train.txt') or os.path.exists(result_filefolder + 'pos_data_test.txt') or os.path.exists(result_filefolder + 'pos_data_valid.txt'):
+    if os.path.exists(result_filefolder + 'data_train.txt') or os.path.exists(result_filefolder + 'data_test.txt') or os.path.exists(result_filefolder + 'data_valid.txt'):
         print(f'#-------------------------------------------------#')
         print(f'result data already exsit, delete before regenerate')
         exit()
 
-    genome_fasta_file = data_cnf['genome_fasta_file']
 
     pybedtools.set_tempdir('/Users/cmf/Downloads/tmp')
 
     blacklist = make_blacklist(blacklist_file, genome_sizes_file, genome_window_size)
     tfs, positive_windows, y_positive, _ ,nonnegative_regions_bed= load_chip_multiTask(input_dir,genome_sizes_file, target_window_size, genome_window_size, genome_window_step, blacklist)
     
-    # ---------------------- random sample the negative data to match the size of positive ---------------------- #
-    #os.system("shuf -n {} data/tf_chip/negative_windows.bed > data/tf_chip/shuf_negative_windows.bed".format(100000))
-    #negative_windows = BedTool("data/tf_chip/shuf_negative_windows.bed") 
 
-    #make_pos_features_multiTask(genome_sizes_file, genome_window_size, positive_windows, y_positive, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
-    #make_neg_features_multiTask(genome_sizes_file, genome_window_size, positive_windows, nonnegative_regions_bed, valid_chroms, test_chroms, genome_fasta_file, bigwig_data, result_filefolder)
-
-    #os.system("cat {}pos_data_train.txt {}neg_data_train.txt > {}data_train.txt".format(result_filefolder,result_filefolder,result_filefolder))
-    #os.system("cat {}pos_data_valid.txt {}neg_data_valid.txt > {}data_valid.txt".format(result_filefolder,result_filefolder,result_filefolder))
-    #os.system("cat {}pos_data_test.txt {}neg_data_test.txt > {}data_test.txt".format(result_filefolder,result_filefolder,result_filefolder))
     make_features_multiTask(genome_sizes_file, positive_windows, y_positive, target_window_size, genome_window_size, nonnegative_regions_bed, epochs, valid_chroms, test_chroms, result_filefolder)
-    #os.system("cd {}".format(result_filefolder))
-    #os.system("gzip {}data_train.txt".format(result_filefolder,result_filefolder))
-    #os.system("gzip {}data_valid.txt".format(result_filefolder,result_filefolder))
-    #os.system("gzip {}data_test.txt".format(result_filefolder,result_filefolder))
 
 
 if __name__ == '__main__':

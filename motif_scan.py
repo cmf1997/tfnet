@@ -20,6 +20,7 @@ from ruamel.yaml import YAML
 from pathlib import Path
 import os
 import pandas as pd
+import seaborn as sns
 import pdb
 # code
 
@@ -72,6 +73,18 @@ def parse_fimo_out(fimo_out_file, data_len, cutoff):
     return motif_targets
 
 
+def plot_co_occurrence_matrix(motif_array):
+    motif_array = np.array(motif_array)
+    co_occurrence_matrix = np.dot(motif_array.T,motif_array)
+    row, col = np.diag_indices_from(co_occurrence_matrix)
+    co_occurrence_matrix[row,col] = 0
+    g = sns.clustermap(co_occurrence_matrix, center=0, cmap="vlag",
+                   dendrogram_ratio=(0, .2),
+                   cbar_pos=(.02, .32, .03, .2),
+                   linewidths=.75, figsize=(12, 13))
+    g.savefig('results/co_occurrence_matrix_motif.pdf')
+
+
 def write_motif_result(data_file, motif_targets):
     with gzip.open(data_file, 'rt') as fp:
         lines = fp.read().splitlines()
@@ -97,5 +110,8 @@ def main():
 
     cutoff = 1
     motif_targets = parse_fimo_out(fimo_out_file, data_len, cutoff)
+    plot_co_occurrence_matrix(motif_targets)
     write_motif_result(data_file, motif_targets)
     
+if __name__ == '__main__':
+    main()

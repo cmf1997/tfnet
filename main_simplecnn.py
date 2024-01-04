@@ -72,7 +72,7 @@ def get_binding_core(data_list, model_cnf, model_path, start_id, num_models, cor
 @click.option('-m', '--model-cnf', type=click.Path(exists=True))
 @click.option('--mode', type=click.Choice(('train', 'eval', 'predict','5cv', 'loo', 'lomo', 'binding', 'seq2logo')), default=None)
 @click.option('-s', '--start-id', default=0)
-@click.option('-n', '--num_models', default=20)
+@click.option('-n', '--num_models', default=1)
 @click.option('-c', '--continue', 'continue_train', is_flag=True)
 @click.option('-a', '--allele', default=None)
 def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele):

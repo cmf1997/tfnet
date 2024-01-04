@@ -33,7 +33,7 @@ class Network(nn.Module):
 
 
 class SimpleCNN(Network):
-    def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.2, pooling=True, **kwargs):
+    def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, **kwargs):
         super(SimpleCNN, self).__init__(**kwargs)
         self.conv = nn.ModuleList(nn.Conv1d(int(emb_size), cn, cs) for cn, cs in zip(conv_num, conv_size))  
         self.conv_bn = nn.ModuleList(nn.BatchNorm1d(cn) for cn in conv_num)
@@ -59,14 +59,14 @@ class SimpleCNN(Network):
 
         self.reset_parameters()
 
-    def forward(self, DNA_x, tf_x, pooling=None, **kwargs):
+    def forward(self, DNA_x, tf_x, **kwargs):
         DNA_x = super(SimpleCNN, self).forward(DNA_x, tf_x)
         DNA_x = torch.transpose(DNA_x,1,2)
 
         # ----------------do not apply conv off for same output dim then iconv  ----------------#
         conv_out = torch.cat([F.relu(conv_bn(conv(DNA_x[:,:,off: DNA_x.shape[2] - off])))
                               for conv, conv_bn, off in zip(self.conv, self.conv_bn, self.conv_off)], dim=1)
-        #torch.Size([64, 145, 1024])
+        #torch.Size([bs, sum(conv_num), DNA_len])
         conv_out = nn.functional.max_pool1d(conv_out,4,4)
         conv_out = nn.functional.dropout(conv_out,0.2)
 
@@ -76,13 +76,14 @@ class SimpleCNN(Network):
             linear_index += 1
             conv_out = linear_bn(linear(conv_out))
             if linear_index == self.len_linear:
-                #conv_out = F.relu(nn.functional.max_pool1d(conv_out,2,2))
-                conv_out = F.relu(nn.functional.avg_pool1d(conv_out,4,4))
+                conv_out = nn.functional.avg_pool1d(F.relu(conv_out,4,4))
                 conv_out = nn.functional.dropout(conv_out,0.2)
-
+        # torch.Size([bs, linear_size[-1], (1024 - 2* DNA_pad])/4)
+                
         # ---------------------- last conv1d with size 1  ---------------------- #
         conv_out = self.linear_bn_s1(self.linear_s1(conv_out))
         conv_out = F.relu(nn.functional.avg_pool1d(conv_out,4,4))
+        # torch.Size([bs, linear_s1, 62])
         
         # ---------------- flatten and full connect ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)

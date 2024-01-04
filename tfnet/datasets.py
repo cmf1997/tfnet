@@ -29,7 +29,6 @@ __all__ = ["TFBindDataset"]
 # code
 class TFBindDataset(Dataset):
     def __init__(self, data_list, genome_fasta_file, bw_file, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0, target_len=200, DNA_N = True):
-        #self.tf_names, self.DNA_x, self.tf_x, self.targets = [], [], [], []
         self.DNA_N = DNA_N
         self.data_list = data_list
         self.DNA_x, self.tf_x, self.targets = [], [], []
@@ -68,11 +67,6 @@ class TFBindDataset(Dataset):
         # ---------------------- bw_list need padding like DNA_x ---------------------- #
         bigwig_signal = {}
         for index in range(len(self.bigwig_data)):
-            #try: 
-            #    self.bigwig_data[index].values(chr,start,stop)
-            #except RuntimeError:
-            #    pdb.set_trace()
-
             bigwig_signal[index] = np.array(self.bigwig_data[index].values(chr,start,stop))
             bigwig_signal[index][np.isnan(bigwig_signal[index])] = 0
 
@@ -83,11 +77,11 @@ class TFBindDataset(Dataset):
                 bigwig_signal[i] = bigwig_signal[i]
 
             bigwig_signal[i] = np.expand_dims(bigwig_signal[i],axis=-1)
-            #bigwig_signal_rc = bigwig_signal[i][::-1,:].copy()
+            bigwig_signal_rc = bigwig_signal[i][::-1,:].copy()
             bigwig_signal[i] = torch.tensor(bigwig_signal[i], dtype=torch.float32)
-            #bigwig_signal_rc = torch.tensor(bigwig_signal_rc, dtype=torch.float32)
+            bigwig_signal_rc = torch.tensor(bigwig_signal_rc, dtype=torch.float32)
             DNA_x = torch.cat([DNA_x, bigwig_signal[i]],dim=1)
-            #DNA_x = torch.cat([DNA_x, bigwig_signal_rc],dim=1)
+            DNA_x = torch.cat([DNA_x, bigwig_signal_rc],dim=1)
             
         tf_x = []
         for tf_seq in all_tfs_seq:

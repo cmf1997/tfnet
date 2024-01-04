@@ -157,9 +157,9 @@ class Model(object):
 
         
 
-        if balanced_accuracy > self.training_state['best']:
+        if mean_auc > self.training_state['best']:
             self.save_model()
-            self.training_state['best'] = balanced_accuracy
+            self.training_state['best'] = mean_auc
         if verbose:
             logger.info(f'Epoch: {epoch_idx}  '
                         f'train loss: {train_loss:.5f}  '

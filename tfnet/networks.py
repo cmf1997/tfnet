@@ -37,7 +37,7 @@ class Network(nn.Module):
         nn.init.uniform_(self.tf_emb.weight, -0.1, 0.1)
 
 class TFNet(Network):
-    def __init__(self, *, conv_num, conv_size, conv_off, linear_size, full_size, dropout=0.5, pooling=True, **kwargs):
+    def __init__(self, *, conv_num, conv_size, conv_off, linear_size, full_size, **kwargs):
         super(TFNet, self).__init__(**kwargs)
         self.conv = nn.ModuleList(IConv(cn, cs, self.tf_len) for cn, cs in zip(conv_num, conv_size))        
         self.conv_bn = nn.ModuleList(nn.BatchNorm2d(cn) for cn in conv_num)
@@ -56,7 +56,7 @@ class TFNet(Network):
 
         self.reset_parameters()
 
-    def forward(self, DNA_x, tf_x, pooling=None, **kwargs):
+    def forward(self, DNA_x, tf_x, **kwargs):
         DNA_x, tf_x = super(TFNet, self).forward(DNA_x, tf_x)
         # ---------------- apply conv off for same output dim then iconv  ----------------#
         # ---------------------- single result torch.Size([bs, cn, 1024, len(all_tfs)]) ---------------------- #
