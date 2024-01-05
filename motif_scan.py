@@ -25,6 +25,12 @@ import pdb
 # code
 
 # ---------------------- data ---------------------- #
+def tfs_dict(all_tfs):
+    all_tfs_dict = {}
+    for index, tf in enumerate(all_tfs):
+        all_tfs_dict[tf] = index
+
+
 def get_data_bed(data_file, genome_fasta_file):
     genome_fasta = pysam.Fastafile(genome_fasta_file)
     data_list = []
