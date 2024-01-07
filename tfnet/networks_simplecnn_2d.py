@@ -36,12 +36,14 @@ class SimpleCNN_2d(Network):
     def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, **kwargs):
         super(SimpleCNN_2d, self).__init__(**kwargs)
 
-        in_channels = [int(emb_size)] + conv_num  # depend on embedding
+        #in_channels = [int(emb_size)] + conv_num  # depend on embedding
+        in_channels = [int(emb_size)] + linear_size  # depend on embedding
         
         # ---------------------- nn.Conv2d size (1,8) for deepsea ---------------------- #
-        self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,9),(1,1),padding="same") for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
+        #self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,9),(1,1),padding="same") for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
+        self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,9),(1,1)) for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
         self.conv_bn = nn.ModuleList([nn.BatchNorm2d(out_channel) for out_channel in in_channels[1:]])          
-        self.conv_len = len(conv_num)
+        self.conv_len = len(linear_size)
 
         #full_size_first = [4096] # [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
         full_size = full_size + [len(all_tfs)]
@@ -65,9 +67,7 @@ class SimpleCNN_2d(Network):
         conv_index = 0
         for conv, conv_bn in zip(self.conv, self.conv_bn):
             conv_index += 1
-            conv_out = conv(conv_out)
-            conv_out = conv_bn(conv_out)
-            conv_out = nn.functional.relu(conv_out)
+            conv_out = F.relu(conv_bn(conv(conv_out)))
             if conv_index == self.conv_len:
                 conv_out = nn.functional.dropout(conv_out,0.5)         
             else:

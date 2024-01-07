@@ -65,23 +65,35 @@ class TFBindDataset(Dataset):
             DNA_x = mat[:self.DNA_len, :4]
         DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
         # ---------------------- bw_list need padding like DNA_x ---------------------- #
+        '''
         bigwig_signal = {}
         for index in range(len(self.bigwig_data)):
             bigwig_signal[index] = np.array(self.bigwig_data[index].values(chr,start,stop))
             bigwig_signal[index][np.isnan(bigwig_signal[index])] = 0
+        '''
 
-        for i in range(len(bigwig_signal)):
+        bigwig_signals = []
+        bigwig_signals_rc = []
+        
+        for index in range(len(self.bigwig_data)):
+            bigwig_signal = np.array(self.bigwig_data[index].values(chr,start,stop))
+            bigwig_signal[np.isnan(bigwig_signal)] = 0
+            bigwig_signals.append(bigwig_signal)
+            bigwig_signals_rc.append(bigwig_signal[::-1].copy())
+
+        # ---------------- concatenate rc, comment to abort----------------#
+        bigwig_signals.extend(bigwig_signals_rc)
+
+        for i in range(len(bigwig_signals)):
             if self.DNA_N:
-                bigwig_signal[i] = [0 for i in range(self.DNA_pad)] + [j for j in bigwig_signal[i]] + [0 for i in range(self.DNA_pad)]
+                bigwig_signal = [0 for i in range(self.DNA_pad)] + [j for j in bigwig_signals[i]] + [0 for i in range(self.DNA_pad)]
             else:
-                bigwig_signal[i] = bigwig_signal[i]
+                bigwig_signal = bigwig_signals[i]
 
-            bigwig_signal[i] = np.expand_dims(bigwig_signal[i],axis=-1)
-            bigwig_signal_rc = bigwig_signal[i][::-1,:].copy()
-            bigwig_signal[i] = torch.tensor(bigwig_signal[i], dtype=torch.float32)
-            bigwig_signal_rc = torch.tensor(bigwig_signal_rc, dtype=torch.float32)
-            DNA_x = torch.cat([DNA_x, bigwig_signal[i]],dim=1)
-            DNA_x = torch.cat([DNA_x, bigwig_signal_rc],dim=1)
+            bigwig_signal = np.expand_dims(bigwig_signal, axis=-1)
+            bigwig_signal = torch.tensor(bigwig_signal, dtype=torch.float32)
+
+            DNA_x = torch.cat([DNA_x, bigwig_signal],dim=1)
             
         tf_x = []
         for tf_seq in all_tfs_seq:
