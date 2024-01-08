@@ -2,12 +2,12 @@ name: SimpleCNN
 path: models
 
 model:
-  emb_size: 6 # for simplecnn
+  emb_size: 8 # for simplecnn
   conv_size: [5, 9, 13, 17, 21] # for simplecnn
   conv_num: [128, 128, 128, 128, 128] # for simplecnn
   conv_off: [8, 6, 4, 2, 0] # for simplecnn
-  linear_size: [128, 512] # for simplecnn
-  full_size: [3968, 128] # for simple cnn
+  linear_size: [256, 512] # for simplecnn
+  full_size: [26624, 1024] # for simple cnn
   DNA_pad: 10
 
 padding:

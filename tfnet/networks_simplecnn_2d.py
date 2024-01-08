@@ -45,11 +45,12 @@ class SimpleCNN_2d(Network):
         self.conv_bn = nn.ModuleList([nn.BatchNorm2d(out_channel) for out_channel in in_channels[1:]])          
         self.conv_len = len(linear_size)
 
-        #full_size_first = [4096] # [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
+        #full_size_first = [25440] # [linear_size[-1] * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(max_pool) ] （smaller due to conv）
+        self.full_len = len(full_size)
         full_size = full_size + [len(all_tfs)]
         self.full_connect = nn.ModuleList([nn.Linear(in_s, out_s) for in_s, out_s in zip(full_size[:-1], full_size[1:])])
         self.full_connect_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in full_size[1:]] )
-        self.full_len = len(all_tfs)
+        
 
         self.reset_parameters()
 
@@ -69,10 +70,10 @@ class SimpleCNN_2d(Network):
             conv_index += 1
             conv_out = F.relu(conv_bn(conv(conv_out)))
             if conv_index == self.conv_len:
-                conv_out = nn.functional.dropout(conv_out,0.5)         
+                conv_out = F.dropout(conv_out,0.5)   
             else:
-                conv_out = nn.functional.max_pool2d(conv_out,(1,4),(1,4))
-                conv_out = nn.functional.dropout(conv_out,0.2)
+                conv_out = F.max_pool2d(conv_out,(1,4),(1,4))
+                conv_out = F.dropout(conv_out,0.2)
 
         # ---------------- flatten and full connect ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)
@@ -80,9 +81,10 @@ class SimpleCNN_2d(Network):
         full_index = 0
         for full, full_bn in zip(self.full_connect, self.full_connect_bn):
             full_index += 1
-            conv_out = F.relu(full_bn(full(conv_out)))
+            #conv_out = F.relu(full_bn(full(conv_out)))
+            conv_out = F.relu(full(conv_out))
             if full_index == self.full_len:
-                conv_out = nn.functional.dropout(conv_out,0)
+                conv_out = F.dropout(conv_out,0)
         return conv_out
 
     def reset_parameters(self):
@@ -92,6 +94,7 @@ class SimpleCNN_2d(Network):
             nn.init.normal_(conv_bn.weight.data, mean=1.0, std=0.002)
         for full_connect, full_connect_bn in zip(self.full_connect, self.full_connect_bn):
             nn.init.trunc_normal_(full_connect.weight, std=0.02)
+            #nn.init.kaiming_normal_(full_connect.weight)
             nn.init.zeros_(full_connect.bias)
             full_connect_bn.reset_parameters()
             nn.init.normal_(full_connect_bn.weight.data, mean=1.0, std=0.002)

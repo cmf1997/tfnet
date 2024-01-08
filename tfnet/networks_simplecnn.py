@@ -39,9 +39,11 @@ class SimpleCNN(Network):
         self.conv_bn = nn.ModuleList(nn.BatchNorm1d(cn) for cn in conv_num)
 
         self.conv_off = conv_off
-        linear_size = [sum(conv_num)] + linear_size
         self.len_linear = len(linear_size)
-        self.linear = nn.ModuleList([nn.Conv1d(in_s, out_s, 5, padding="same")
+        linear_size = [sum(conv_num)] + linear_size
+        self.linear = nn.ModuleList([nn.Conv1d(in_s, out_s, 9, 
+                                               #padding="same"
+                                               )
                                      for in_s, out_s in zip(linear_size[:-1], linear_size[1:])])
         
         self.linear_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in linear_size[1:]])
@@ -51,9 +53,9 @@ class SimpleCNN(Network):
         self.linear_bn_s1 = nn.BatchNorm1d(64)
 
 
-        #full_size_first = [4096] # [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
-        full_size = full_size + [len(all_tfs)]
+        #full_size_first = [] # [linear_size[-1] * len(all_tfs) * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(self.max_pool) ]
         self.len_full = len(full_size)
+        full_size = full_size + [len(all_tfs)]
         self.full_connect = nn.ModuleList([nn.Linear(in_s, out_s) for in_s, out_s in zip(full_size[:-1], full_size[1:])])
         self.full_connect_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in full_size[1:] ])
 
@@ -66,23 +68,27 @@ class SimpleCNN(Network):
         # ----------------do not apply conv off for same output dim then iconv  ----------------#
         conv_out = torch.cat([F.relu(conv_bn(conv(DNA_x[:,:,off: DNA_x.shape[2] - off])))
                               for conv, conv_bn, off in zip(self.conv, self.conv_bn, self.conv_off)], dim=1)
-        #torch.Size([bs, sum(conv_num), DNA_len])
-        conv_out = nn.functional.max_pool1d(conv_out,4,4)
-        conv_out = nn.functional.dropout(conv_out,0.2)
+        #torch.Size([bs, sum(conv_num), DNA_len-2*DNA_pad])
+        
+        conv_out = F.max_pool1d(conv_out,4,4)
+        conv_out = F.dropout(conv_out,0.2)
 
         # ---------------------- covn1d tower with pool ---------------------- #
         linear_index = 0
         for linear, linear_bn in zip(self.linear, self.linear_bn):
             linear_index += 1
-            conv_out = linear_bn(linear(conv_out))
+            conv_out = F.relu(linear_bn(linear(conv_out)))
             if linear_index == self.len_linear:
-                conv_out = nn.functional.avg_pool1d(F.relu(conv_out,4,4))
-                conv_out = nn.functional.dropout(conv_out,0.2)
+                conv_out = F.dropout(conv_out,0.5)
+            else:
+                conv_out = F.max_pool1d(conv_out,4,4)
+                conv_out = F.dropout(conv_out,0.2)
+        
         # torch.Size([bs, linear_size[-1], (1024 - 2* DNA_pad])/4)
                 
         # ---------------------- last conv1d with size 1  ---------------------- #
-        conv_out = self.linear_bn_s1(self.linear_s1(conv_out))
-        conv_out = F.relu(nn.functional.avg_pool1d(conv_out,4,4))
+        #conv_out = self.linear_bn_s1(self.linear_s1(conv_out))
+        #conv_out = F.max_pool1d(F.relu(conv_out),4,4)
         # torch.Size([bs, linear_s1, 62])
         
         # ---------------- flatten and full connect ----------------#
@@ -91,9 +97,10 @@ class SimpleCNN(Network):
         full_index = 0
         for full, full_bn in zip(self.full_connect, self.full_connect_bn):
             full_index += 1
-            conv_out = full_bn(F.relu(full(conv_out)))
+            #conv_out = F.relu(full_bn(full(conv_out)))
+            conv_out = F.relu(full(conv_out))
             if full_index == self.len_full:
-                conv_out = nn.functional.dropout(conv_out,0.2)
+                conv_out = F.dropout(conv_out,0.0)
         return conv_out
 
     def reset_parameters(self):

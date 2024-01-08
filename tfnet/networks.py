@@ -45,7 +45,7 @@ class TFNet(Network):
         self.conv_off = conv_off
 
         linear_size = [sum(conv_num)] + linear_size
-        self.linear = nn.ModuleList([nn.Conv1d(in_s, out_s, 1)
+        self.linear = nn.ModuleList([nn.Conv1d(in_s, out_s, 1) # size = 1
                                      for in_s, out_s in zip(linear_size[:-1], linear_size[1:])])
         self.linear_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in linear_size[1:]])
 
@@ -65,11 +65,11 @@ class TFNet(Network):
         #conv_out = nn.functional.max_pool1d(conv_out,4,4)
         conv_out_max_pool =[]
         for conv_1 in conv_out.unbind(dim=-1):
-            conv_1 = F.relu(nn.functional.max_pool1d(conv_1,4,4))
+            conv_1 = F.max_pool1d(F.relu(conv_1),4,4)
             conv_out_max_pool.append(conv_1)
         conv_out = torch.stack(conv_out_max_pool,dim=-1)
 
-        conv_out = nn.functional.dropout(conv_out,0.2)        
+        conv_out = F.dropout(conv_out,0.2)        
         # torch.Size([bs, sum(conv_num), 1024/4, len(all_tfs)])
 
         # ---------------- manipulate dim 1 by conv1d  ----------------#
@@ -84,7 +84,7 @@ class TFNet(Network):
         # ---------------- manipulate dim -1，-2 by maxpool 2d ----------------#
         conv_out_max_pool =[]
         for conv_1 in conv_out.unbind(dim=-1):
-            conv_1 = F.relu(nn.functional.max_pool1d(conv_1,4,4))
+            conv_1 = F.max_pool1d(F.relu((conv_1),4,4))
             conv_out_max_pool.append(conv_1)
         conv_out = torch.stack(conv_out_max_pool,dim=-1)
         conv_out = conv_out.view(conv_out.shape[0], -1,conv_out.shape[-1])
@@ -93,13 +93,9 @@ class TFNet(Network):
         
         # ---------------- flatten and output ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)
-        #print("shape before full connect", conv_out.shape)
         for full, full_bn in zip(self.full_connect, self.full_connect_bn):
-            #print("shape after full connect", full(conv_out).shape)
             conv_out = full_bn(F.relu(full(conv_out)))
-            #print("shape after full connect bn", conv_out.shape)
             #conv_out = nn.functional.dropout(conv_out,0.2)
-        #return torch.sigmoid(conv_out)
         return conv_out
 
     def reset_parameters(self):
