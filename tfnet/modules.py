@@ -25,7 +25,6 @@ class IConv(nn.Module):
         super(IConv, self).__init__()
         # h weight matrices 
         self.weight = nn.Parameter(torch.Tensor(out_channels, kernel_size, tf_len))
-        #self.bias = nn.Parameter(torch.Tensor(out_channels))
         self.bias = nn.Parameter(torch.Tensor(out_channels))
         self.stride, self.kernel_size = stride, kernel_size
         self.reset_parameters()

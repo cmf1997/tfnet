@@ -65,13 +65,6 @@ class TFBindDataset(Dataset):
             DNA_x = mat[:self.DNA_len, :4]
         DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
         # ---------------------- bw_list need padding like DNA_x ---------------------- #
-        '''
-        bigwig_signal = {}
-        for index in range(len(self.bigwig_data)):
-            bigwig_signal[index] = np.array(self.bigwig_data[index].values(chr,start,stop))
-            bigwig_signal[index][np.isnan(bigwig_signal[index])] = 0
-        '''
-
         bigwig_signals = []
         bigwig_signals_rc = []
         

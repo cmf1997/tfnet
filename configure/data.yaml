@@ -8,7 +8,8 @@ predict: data/tf_chip/pos_data_test.txt
 
 genome_fasta_file: data/genome/hg19.genome.fa
 #bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig', 'data/genome/genome.genmap.bw']
-bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig', 'data/genome/wgEncodeDukeMapabilityUniqueness35bp.bigWig']
+#bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig', 'data/genome/wgEncodeDukeMapabilityUniqueness35bp.bigWig']
+bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig']
 
 results: results
 

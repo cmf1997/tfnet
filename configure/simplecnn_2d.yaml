@@ -2,7 +2,7 @@ name: SimpleCNN_2d
 path: models
 
 model:
-  emb_size: 8 # depending on number of bw       # for simplecnn_2d
+  emb_size: 6 # depending on number of bw       # for simplecnn_2d
   conv_size: [5, 9, 13, 17, 21]
   conv_num: [64, 128, 256, 512, 1024]
   conv_off: [8, 6, 4, 2, 0]
@@ -11,6 +11,9 @@ model:
   linear_size: [160, 240, 480] # reduced parameter adopt for scFAN
 
   full_size: [25440 ,1024] # for simple cnn
+
+  dropouts: [0.2, 0.5]
+
   DNA_pad: 10
 
 padding:

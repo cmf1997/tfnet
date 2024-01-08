@@ -33,7 +33,7 @@ class Network(nn.Module):
 
 
 class SimpleCNN_2d(Network):
-    def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, **kwargs):
+    def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, dropouts, **kwargs):
         super(SimpleCNN_2d, self).__init__(**kwargs)
 
         #in_channels = [int(emb_size)] + conv_num  # depend on embedding
@@ -43,14 +43,13 @@ class SimpleCNN_2d(Network):
         #self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,9),(1,1),padding="same") for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
         self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,9),(1,1)) for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
         self.conv_bn = nn.ModuleList([nn.BatchNorm2d(out_channel) for out_channel in in_channels[1:]])          
-        self.conv_len = len(linear_size)
 
         #full_size_first = [25440] # [linear_size[-1] * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(max_pool) ] （smaller due to conv）
-        self.full_len = len(full_size)
         full_size = full_size + [len(all_tfs)]
         self.full_connect = nn.ModuleList([nn.Linear(in_s, out_s) for in_s, out_s in zip(full_size[:-1], full_size[1:])])
         self.full_connect_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in full_size[1:]] )
         
+        self.dropout = nn.ModuleList([nn.Dropout(dropout) for dropout in dropouts])
 
         self.reset_parameters()
 
@@ -65,27 +64,24 @@ class SimpleCNN_2d(Network):
         conv_out = DNA_x
 
         # ----------------do not apply conv off for same output dim then iconv  ----------------#
-        conv_index = 0
-        for conv, conv_bn in zip(self.conv, self.conv_bn):
-            conv_index += 1
+        for index, (conv, conv_bn) in enumerate(zip(self.conv, self.conv_bn)):
             conv_out = F.relu(conv_bn(conv(conv_out)))
-            if conv_index == self.conv_len:
-                conv_out = F.dropout(conv_out,0.5)   
+            if index == len(self.conv)-1:
+                conv_out = self.dropout[1](conv_out)
             else:
                 conv_out = F.max_pool2d(conv_out,(1,4),(1,4))
-                conv_out = F.dropout(conv_out,0.2)
+                conv_out = self.dropout[0](conv_out)
 
         # ---------------- flatten and full connect ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)
 
-        full_index = 0
-        for full, full_bn in zip(self.full_connect, self.full_connect_bn):
-            full_index += 1
+        for index, (full, full_bn) in enumerate(zip(self.full_connect, self.full_connect_bn)):
             #conv_out = F.relu(full_bn(full(conv_out)))
-            conv_out = F.relu(full(conv_out))
-            if full_index == self.full_len:
-                conv_out = F.dropout(conv_out,0)
+            conv_out = full(conv_out)
+            if index != len(self.full_connect)-1:
+                conv_out = F.relu(conv_out)
         return conv_out
+    
 
     def reset_parameters(self):
         for conv, conv_bn in zip(self.conv, self.conv_bn):
