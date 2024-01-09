@@ -76,7 +76,6 @@ class TFBindDataset(Dataset):
 
         # ---------------- concatenate rc, comment to abort----------------#
         bigwig_signals.extend(bigwig_signals_rc)
-
         for i in range(len(bigwig_signals)):
             if self.DNA_N:
                 bigwig_signal = [0 for i in range(self.DNA_pad)] + [j for j in bigwig_signals[i]] + [0 for i in range(self.DNA_pad)]

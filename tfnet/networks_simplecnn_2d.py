@@ -41,7 +41,8 @@ class SimpleCNN_2d(Network):
         
         # ---------------------- nn.Conv2d size (1,8) for deepsea ---------------------- #
         #self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,9),(1,1),padding="same") for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
-        self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,9),(1,1)) for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
+        self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,8),(1,1)) for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
+        #self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,9),(1,1)) for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
         self.conv_bn = nn.ModuleList([nn.BatchNorm2d(out_channel) for out_channel in in_channels[1:]])          
 
         #full_size_first = [25440] # [linear_size[-1] * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(max_pool) ] （smaller due to conv）

@@ -176,6 +176,9 @@ def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, tar
     b_size = (genome_window_size - target_window_size)/2
     positive_windows = positive_windows.slop(g=genome_sizes_file, b=b_size)
 
+    positive_windows_train = BedTool(positive_windows_train)
+    positive_windows_train = positive_windows_train.slop(g=genome_sizes_file, b=b_size)
+
     positive_windows_valid = BedTool(positive_windows_valid)
     positive_windows_valid = positive_windows_valid.slop(g=genome_sizes_file, b=b_size)
 
@@ -184,8 +187,9 @@ def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, tar
     
 
     print('Getting negative training examples')
-    negative_windows_train = BedTool.cat(*(epochs*[positive_windows]), postmerge=False)
-    negative_windows_train = negative_windows_train.shuffle(g=genome_sizes_file,
+    negative_windows_train = BedTool.cat(*(epochs*[positive_windows]), postmerge=False) # for samples_per_epoch
+    negative_windows_train = negative_windows_train.shuffle(g=genome_sizes_file, # for samples_per_epoch
+    #negative_windows_train = positive_windows_train.shuffle(g=genome_sizes_file, # for single epoch
                                                             incl=genome_bed_train.fn,
                                                             excl=nonnegative_regions_bed.fn,
                                                             noOverlapping=False,
@@ -235,7 +239,8 @@ def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, tar
     for i in range(epochs):
         epoch_data = []
         epoch_data.extend(positive_data_train)
-        epoch_data.extend(negative_data_train[i*num_positive_train_windows:(i+1)*num_positive_train_windows])
+        epoch_data.extend(negative_data_train[i*num_positive_train_windows:(i+1)*num_positive_train_windows]) # for samples_per_epoch
+        #epoch_data.extend(negative_data_train) # for single epoch
         np.random.shuffle(epoch_data)
         data_train.extend(epoch_data)
 
@@ -277,7 +282,6 @@ def main(data_cnf, model_cnf):
     valid_chroms = data_cnf['valid_chroms']
     test_chroms = data_cnf['test_chroms']
     epochs = model_cnf['train']['num_epochs']
-    genome_window_size = model_cnf['padding']['DNA_len']
 
     if os.path.exists(result_filefolder + 'data_train.txt') or os.path.exists(result_filefolder + 'data_test.txt') or os.path.exists(result_filefolder + 'data_valid.txt'):
         print(f'#-------------------------------------------------#')

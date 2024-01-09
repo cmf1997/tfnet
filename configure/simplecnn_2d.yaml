@@ -10,7 +10,7 @@ model:
   #linear_size: [320,480,960] # parameter for deepSEA # for simplecnn_2d  
   linear_size: [160, 240, 480] # reduced parameter adopt for scFAN
 
-  full_size: [25440 ,1024] # for simple cnn
+  full_size: [25920 ,1024] # for simple cnn #25920 for kernel size 8 / 25440 for kernel size 9
 
   dropouts: [0.2, 0.5]
 
@@ -25,11 +25,11 @@ padding:
 
 train:
   batch_size: 64
-  num_epochs: 100
+  num_epochs: 5
   opt_params:
     #optimizer_cls: Adadelta
     #lr: 0.05
-    weight_decay: 1e-4
+    weight_decay: 5e-07
     optimizer_cls: Adam
     lr: 0.001
 

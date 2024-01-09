@@ -16,7 +16,8 @@ import torch.nn as nn
 import csv
 
 from pathlib import Path
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, SequentialSampler
+from tfnet.datasets import TFBindDataset
 from tqdm import tqdm
 from logzero import logger
 from typing import Optional, Mapping, Tuple
@@ -59,7 +60,6 @@ class Model(object):
     """
     def __init__(self, network, model_path, class_weights_dict = None, **kwargs):
         self.model = self.network = network(**kwargs).to(mps_device)
-
         if class_weights_dict:
             self.model_path =  Path(model_path)
         else:
@@ -106,15 +106,38 @@ class Model(object):
             optimizer_cls = getattr(torch.optim, optimizer_cls)
         self.optimizer = optimizer_cls(self.model.parameters(), weight_decay=weight_decay, betas = (0.95,0.9995),**kwargs)
 
-    def train(self, train_loader: DataLoader, valid_loader: DataLoader, class_weights_dict=None, opt_params: Optional[Mapping] = (),
-              num_epochs=20, verbose=True, **kwargs):
+    #def train(self, train_loader: DataLoader, valid_loader: DataLoader, class_weights_dict=None, opt_params: Optional[Mapping] = (),
+    #          num_epochs=20, verbose=True, **kwargs):
+        
+    # ---------------------- for samples_per_epoch ---------------------- #
+    def train(self, data_cnf, model_cnf, train_data, valid_data, class_weights_dict=None, opt_params: Optional[Mapping] = (),
+               num_epochs=20, verbose=True, **kwargs): 
+        
+        valid_loader = DataLoader(TFBindDataset(valid_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
+                              batch_size=model_cnf['valid']['batch_size']) 
+        W_values = np.linspace(0, len(train_data), num_epochs + 1)
+        W_chunks = list(map(int, W_values))
+    # ---------------------- section ---------------------- #
+    
+        
         self.get_optimizer(**dict(opt_params))
         self.training_state['best'] = 0
         for epoch_idx in range(num_epochs):
             train_loss = 0.0
+
+            # ---------------------- for samples_per_epoch ---------------------- #
+
+            train_data_single_epoch = train_data[W_chunks[epoch_idx]: W_chunks[epoch_idx + 1]]
+            train_loader = DataLoader(TFBindDataset(train_data_single_epoch, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
+                              batch_size=model_cnf['train']['batch_size'], shuffle=False)
+            # ---------------------- section ---------------------- #
+
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
                 train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
+
             train_loss /= len(train_loader.dataset)
+            #train_loss /= len(train_loader.dataset)
+
             balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
             if self.early_stopper_1.early_stop(valid_loss):
                 logger.info(f'Early Stopping due to valid loss')
@@ -122,11 +145,12 @@ class Model(object):
             if self.early_stopper_2.early_stop(balanced_accuracy):
                 logger.info(f'Early Stopping due to balanced accuracy')
                 break            
-        # ---------------------- record loss pcc for each epoch and plot---------------------- #
+        # ---------------------- record loss for each epoch and plot---------------------- #
 
 
     def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.bind_list
+
         valid_loss = torch.nn.functional.binary_cross_entropy_with_logits(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
 
         mean_auc = get_mean_auc(targets, scores)

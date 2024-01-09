@@ -82,6 +82,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     logger.info(f'Model Name: {model_name}')
     model_path = Path(model_cnf['path'])/f'{model_name}.pt'
     res_path = Path(data_cnf['results'])/f'{model_name}'
+    Path(data_cnf['results']).mkdir(parents=True, exist_ok=True)
     model_cnf.setdefault('ensemble', 20)
     tf_name_seq = get_tf_name_seq(data_cnf['tf_seq'])
     get_data_fn = partial(get_data_lazy, tf_name_seq=tf_name_seq, genome_fasta_file= data_cnf['genome_fasta_file'], DNA_N = model_cnf['padding']['DNA_N'])
