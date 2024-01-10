@@ -77,7 +77,10 @@ python main_simplecnn_2d_split.py -d configure/data.yaml -m configure/simplecnn_
 
 ```
 python main_simplecnn.py -d configure/data.yaml -m configure/simplecnn.yaml --mode train -n 5
+
 python main_simplecnn_2d.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
+python main_simplecnn_2d_epoch.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
+
 python baseline_random.py configure/data.yaml
 python baseline_zero.py configure/data.yaml
 ```

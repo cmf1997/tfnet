@@ -1,5 +1,9 @@
-tf_seq: data/tf_pseudosequences.txt
-train: data/tf_chip/lazy/data_train_mini.txt.gz
+#tf_seq: data/tf_pseudosequences.txt
+tf_seq : data/tf_pseudosequences_H1ESC.txt # for H1ESC
+
+#train: data/tf_chip/lazy/data_train_mini.txt.gz
+train: data/tf_chip/H1ESC/data_train_mini.txt.gz
+
 train_prefix: data/tf_chip/train_mini_
 #valid: data/tf_chip/lazy/data_valid.txt.gz
 test: data/tf_chip/data_test.txt
@@ -8,7 +12,8 @@ predict: data/tf_chip/data_test.txt
 genome_fasta_file: data/genome/hg19.genome.fa
 #bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig', 'data/genome/genome.genmap.bw']
 #bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig', 'data/genome/wgEncodeDukeMapabilityUniqueness35bp.bigWig']
-bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig']
+#bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig']
+bigwig_file: ['data/atac/H1ESC.bw']
 
 results: results
 
@@ -18,6 +23,7 @@ input_dir: data/tf_chip/
 genome_window_step: 50
 target_window_size: 200
 valid_chroms: ['chr11']
-test_chroms: ['chr1', 'chr8', 'chr21']
+#test_chroms: ['chr1', 'chr8', 'chr21']
+test_chroms: ['chr1', 'chr8', 'chr21', 'chr2', 'chr9']
 genome_sizes_file: data/tf_chip/hg19.autoX.chrom.sizes
 blacklist_file: data/tf_chip/filter_blacklist.bed

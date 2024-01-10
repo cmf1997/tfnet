@@ -17,6 +17,7 @@ import re
 import ast
 import gzip
 import pysam
+from logzero import logger
 import pdb
 
 __all__ = ['ACIDS', 'get_tf_name_seq', 'get_data', 'get_data_lazy', 'get_binding_data', 'calculate_class_weights_dict','get_seq2logo_data', 'set_DNA_len','get_model_parameters']
@@ -78,17 +79,17 @@ def get_data_lazy(data_file, tf_name_seq, genome_fasta_file, DNA_N = True):
     genome_fasta = pysam.Fastafile(genome_fasta_file)
     with gzip.open(data_file, 'rt') as fp:
         for line in fp:
-            #DNA_seq, bind_list,  = line.split()
             # ---------------------- process multiple bigwig file ---------------------- #
             chr, start, stop, bind_list  = line.split('\t')
             start = int(start)
             stop = int(stop)
 
-            DNA_seq = genome_fasta.fetch(chr, start, stop)
-
             bind_list = [float(i) for i in bind_list.split(',')]
 
             # ---------------------- encounter w r in dna seq ---------------------- #
+            '''
+            DNA_seq = genome_fasta.fetch(chr, start, stop)
+            
             if DNA_N:
                 if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcgn]', DNA_seq.lower())):
                     data_list.append((chr, start, stop, bind_list, all_tfs_seq))
@@ -96,7 +97,13 @@ def get_data_lazy(data_file, tf_name_seq, genome_fasta_file, DNA_N = True):
             else:
                 if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcg]', DNA_seq.lower())):   
                     data_list.append((chr, start, stop, bind_list, all_tfs_seq))
+            '''
+            # ---------------------- despite n ---------------------- #
+            data_list.append((chr, start, stop, bind_list, all_tfs_seq))
+
+
     genome_fasta.close()
+    logger.info(f'number of data_list: {len(data_list)}')
     return data_list
 
 def calculate_class_weights_dict(data_file):

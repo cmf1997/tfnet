@@ -23,10 +23,6 @@ from pathlib import Path
 import csv
 from tfnet.all_tfs import all_tfs
 import os
-import pyBigWig
-import pysam
-import re
-import random
 
 import pdb
 
@@ -193,7 +189,9 @@ def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, tar
                                                             incl=genome_bed_train.fn,
                                                             excl=nonnegative_regions_bed.fn,
                                                             noOverlapping=False,
-                                                            seed=np.random.randint(-214783648, 2147483647))
+                                                            seed=np.random.randint(-214783648, 2147483647)
+                                                            #, output= 'negative_train_windows.bed'
+                                                            )
                                                             #seed=np.random.randint(-21478364, 21474836))
     print('Getting negative validation examples')
     negative_windows_valid = positive_windows_valid.shuffle(g=genome_sizes_file,
@@ -235,14 +233,20 @@ def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, tar
     data_test = negative_data_test + positive_data_test
 
     print('Shuffling training data')
+
+    # ---------------------- for samples_per_epoch ---------------------- #
     data_train = []
     for i in range(epochs):
         epoch_data = []
         epoch_data.extend(positive_data_train)
         epoch_data.extend(negative_data_train[i*num_positive_train_windows:(i+1)*num_positive_train_windows]) # for samples_per_epoch
-        #epoch_data.extend(negative_data_train) # for single epoch
         np.random.shuffle(epoch_data)
         data_train.extend(epoch_data)
+
+
+    # ---------------------- for single epoch ---------------------- #
+    #data_train = negative_data_train + positive_data_train
+    #np.random.shuffle(data_train)
 
     # ---------------------- write result ---------------------- #
     write_result("data_train", data_train, result_filefolder)
@@ -262,14 +266,6 @@ def main(data_cnf, model_cnf):
     data_cnf, model_cnf = yaml.load(Path(data_cnf)), yaml.load(Path(model_cnf))
 
     input_dir = data_cnf['input_dir']
-
-
-    bw_file = data_cnf['bigwig_file']
-    bigwig_data = {}
-    for index, single_bw_file in enumerate(bw_file):
-        bigwig_data[index] = pyBigWig.open(single_bw_file)
-        
-
     
     genome_window_size = model_cnf['padding']['DNA_len']
     target_window_size = data_cnf['target_window_size']
