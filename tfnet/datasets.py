@@ -49,6 +49,11 @@ class TFBindDataset(Dataset):
         bind_list = np.asarray(bind_list, dtype=np.float32)
         start = int(start)
         stop = int(stop)
+        # ---------------------- shift ---------------------- #
+        shift = np.random.randint(-20, 20+1)
+        start += shift
+        stop += shift
+
         DNA_seq = self.genome_fasta.fetch(chr, start, stop)
         if self.DNA_N:
             d = {'a':0, 'A':0, 'g':1, 'G':1, 'c':2, 'C':2, 't':3, 'T':3, 'N':4, 'n':4}
@@ -61,7 +66,8 @@ class TFBindDataset(Dataset):
             d = {'a':0, 'A':0, 'g':1, 'G':1, 'c':2, 'C':2, 't':3, 'T':3}
             mat = np.zeros((len(DNA_seq),4))
             for i in range(len(DNA_seq)):
-                mat[i,d[DNA_seq[i]]] = 1
+                if len(re.findall('[atcg]', DNA_seq[i].lower())) != 0:  # no one hot for n
+                    mat[i,d[DNA_seq[i]]] = 1
             DNA_x = mat[:self.DNA_len, :4]
         DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
         # ---------------------- bw_list need padding like DNA_x ---------------------- #
