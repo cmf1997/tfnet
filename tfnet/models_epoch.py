@@ -21,7 +21,7 @@ from tfnet.datasets import TFBindDataset
 from tqdm import tqdm
 from logzero import logger
 from typing import Optional, Mapping, Tuple
-from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_pcc
+from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_recall, get_mean_aupr
 from tfnet.all_tfs import all_tfs
 import matplotlib.pyplot as plt
 import pdb
@@ -160,6 +160,8 @@ class Model(object):
 
         mean_auc = get_mean_auc(targets, scores)
         f1_score = get_mean_f1(targets, scores)
+        recall_score = get_mean_recall(targets, scores)
+        aupr = get_mean_aupr(targets, scores)
         lrap = get_label_ranking_average_precision_score(targets, scores)
         accuracy = get_mean_accuracy_score(targets, scores)
         balanced_accuracy = get_mean_balanced_accuracy_score(targets, scores)
@@ -172,6 +174,8 @@ class Model(object):
                         f'train loss: {train_loss:.5f}  '
                         f'valid loss: {valid_loss:.5f}  ' 
                         f'mean_auc: {mean_auc:.5f}  '
+                        f'aupr: {aupr:.5f}  '
+                        f'recall score: {recall_score:.5f}  '
                         f'f1 score: {f1_score:.5f}  '
                         f'lrap: {lrap:.5f}  '
                         f'accuracy: {accuracy:.5f}  '

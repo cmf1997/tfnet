@@ -19,11 +19,13 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import f1_score
 from sklearn.metrics import label_ranking_average_precision_score
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_recall_curve, average_precision_score, auc
 from tfnet.all_tfs import all_tfs
 from logzero import logger
 import pdb
 
-__all__ = ['CUTOFF', 'get_mean_auc', 'get_mean_pcc', 'get_mean_f1', 'get_mean_accuracy_score', 'get_mean_balanced_accuracy_score','get_label_ranking_average_precision_score', 'get_group_metrics', 'output_eval', 'output_predict']
+__all__ = ['CUTOFF', 'get_mean_auc', 'get_mean_recall', 'get_mean_aupr', 'get_mean_pcc', 'get_mean_f1', 'get_mean_accuracy_score', 'get_mean_balanced_accuracy_score','get_label_ranking_average_precision_score', 'get_group_metrics', 'output_eval', 'output_predict']
 
 CUTOFF = 0.8
 
@@ -37,6 +39,24 @@ def get_mean_auc(targets, scores):
         auc_scores.append(auc)
     return np.mean(auc_scores)
 
+
+def get_mean_recall(targets, scores):
+    recall_list = []
+    for i in range(targets.shape[0]):
+        pcc = recall_score(targets[i, :], scores[i, :]> CUTOFF, zero_division=0.0)
+        recall_list.append(pcc)
+    return np.mean(np.array(recall_list, dtype=float))    
+
+
+def get_mean_aupr(targets, scores):
+    aupr_list = []
+    for i in range(targets.shape[0]):
+        precision, recall, thresholds = precision_recall_curve(targets[i, :], scores[i, :])
+        #average_precision = average_precision_score(targets[i, :], scores[i, :])
+        auc_precision_recall = auc(recall, precision)
+        aupr_list.append(auc_precision_recall)
+    return np.mean(np.array(aupr_list, dtype=float))  
+    
 
 def get_mean_pcc(targets, scores):
     pcc_list = []
