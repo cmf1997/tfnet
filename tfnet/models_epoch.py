@@ -117,6 +117,9 @@ class Model(object):
                               batch_size=model_cnf['valid']['batch_size']) 
         W_values = np.linspace(0, len(train_data), num_epochs + 1)
         W_chunks = list(map(int, W_values))
+
+        num_epochs = num_epochs * 5
+
     # ---------------------- section ---------------------- #
     
         
@@ -124,6 +127,8 @@ class Model(object):
         self.training_state['best'] = 0
         for epoch_idx in range(num_epochs):
             train_loss = 0.0
+            
+            epoch_idx %= 5
 
             # ---------------------- for samples_per_epoch ---------------------- #
 
