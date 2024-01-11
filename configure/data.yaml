@@ -2,7 +2,7 @@
 tf_seq : data/tf_pseudosequences_H1ESC.txt # for H1ESC
 
 #train: data/tf_chip/lazy/data_train_mini.txt.gz
-train: data/tf_chip/H1ESC/data_train_mini.txt.gz
+train: data/tf_chip/H1ESC/data_train_mini_2.txt.gz
 
 train_prefix: data/tf_chip/train_mini_
 #valid: data/tf_chip/lazy/data_valid.txt.gz

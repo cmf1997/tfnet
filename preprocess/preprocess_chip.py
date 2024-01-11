@@ -16,6 +16,17 @@
 # ENCSR000BMU , ENCSR000ECE , ENCSR000BHM , ENCSR000ECF , ENCSR000BJW , ENCSR000BIQ , ENCSR000BIR , ENCSR000BQG , ENCSR000BQV , 
 # ENCSR000BIV , ENCSR000ECB , ENCSR000BIT , ENCSR000BIU , ENCSR000ECD , ENCSR000BKD , ENCSR000EBW 
 
+# ---------------------- download bed.gz ---------------------- #
+ids = []
+with open("bed_tf.txt") as fp:
+    for line in fp:
+        for id, name in line.split(","):
+            ids.append(id)
+
+for id in ids:
+    print(f'https://www.encodeproject.org/files/{id}/@@download/{id}.bed.gz')
+
+
 '''
 # ---------------- K562 ----------------#
 ENCSR000EFY , ENCFF835KAT , ENCFF891OQP , ARID3A
@@ -81,19 +92,19 @@ ENCSR000EWN , ENCFF891MVM , ENCFF264BDD , ZNF263 # warning
 
 
 # ---------------- GM12878 ----------------#
-ENCSR000BJY , ATF3 # warning, GRCh38
-ENCSR000DZJ , ENCFF888ANG , BHLHE40
-ENCSR000BRX , CEBPB # no hg19 / GRCh38
+ENCSR000BJY , ATF3 # warning, GRCh38                                        # need process
+ENCFF853SOB , ENCFF888ANG , BHLHE40
+ENCSR000BRX , CEBPB # no hg19 / GRCh38                                      # need process
 ENCSR000DZN , ENCFF710VEH , CTCF # warning Insufficient read depth
 ENCSR000DYY , ENCFF433PFN , E2F4
 ENCSR000BRG , ENCFF618EFD , EGR1
-ENCSR000BMB , ELF1 # no hg19 / GRCh38
+ENCSR000BMB , ELF1 # no hg19 / GRCh38                                       # need process
 ENCSR000DZB , ENCFF556JBS , ELK1
 ENCSR000BKA , ENCFF332PGQ , ETS1
 ENCSR000EYZ , ENCFF002COM , FOS
 ENCSR000EYV , ENCFF002COV , JUND # warning
 ENCSR000DZF , ENCFF083KVY , MAX
-ENCSR000BKB , ENCFF328QLX , MEF2A# warning
+ENCSR000BKB , ENCFF328QLX , MEF2A # warning
 ENCSR000DKU , ENCFF002DAI , MYC # warning
 ENCSR000DZY , NFE2 # warning
 ENCSR000DNN , ENCFF414JLN , NFYA
@@ -107,7 +118,7 @@ ENCSR000BJE , ENCFF606WUV , SIX5
 ENCSR000DZP , ENCFF686FLD , SMC3
 ENCSR000BHK , ENCFF002CHV , SP1
 ENCSR000BGE , ENCFF199WGD , SRF
-ENCSR000DZM , STAT1 # GRCh38 
+ENCSR000DZM , STAT1 # GRCh38                                                # need process
 ENCSR000BQZ , ENCFF492YMU , STAT5A
 ENCSR000EUL , ENCFF721FTG , NR2C2
 ENCSR000DZU , ENCFF372DRC , USF2
