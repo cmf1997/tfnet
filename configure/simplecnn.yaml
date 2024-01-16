@@ -7,7 +7,7 @@ model:
   conv_num: [128, 128, 128, 128, 128] # for simplecnn
   conv_off: [8, 6, 4, 2, 0] # for simplecnn
   linear_size: [256, 512] # for simplecnn
-  full_size: [26624, 1024] # for simple cnn
+  full_size: [27648, 1024] # for simple cnn
 
   dropouts: [0.2, 0.5]
 
@@ -17,7 +17,7 @@ padding:
   target_len: 200
   DNA_len: 1024
   DNA_pad: 10
-  tf_len: 39
+  tf_len: 2
   DNA_N: False
 
 train:

@@ -60,6 +60,7 @@ class Model(object):
     """
     def __init__(self, network, model_path, class_weights_dict = None, **kwargs):
         self.model = self.network = network(**kwargs).to(mps_device)
+        #pdb.set_trace()
         if class_weights_dict:
             self.model_path =  Path(model_path)
         else:
@@ -118,7 +119,7 @@ class Model(object):
         W_values = np.linspace(0, len(train_data), num_epochs + 1)
         W_chunks = list(map(int, W_values))
 
-        num_epochs = num_epochs * 5
+        num_epochs = num_epochs * 20 # custom true epoch for entire dataset
 
     # ---------------------- section ---------------------- #
     
@@ -128,7 +129,7 @@ class Model(object):
         for epoch_idx in range(num_epochs):
             train_loss = 0.0
             
-            epoch_idx %= 5
+            epoch_idx %= 5 # due to the formation of train dataset
 
             # ---------------------- for samples_per_epoch ---------------------- #
 

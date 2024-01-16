@@ -92,7 +92,7 @@ ENCSR000EWN , ENCFF891MVM , ENCFF264BDD , ZNF263 # warning
 
 
 # ---------------- GM12878 ----------------#
-ENCSR000BJY , ATF3 # warning, GRCh38                                        # need process
+ENCSR000BJY , ATF3 # warning, GRCh38                                        # need process, failure due to sequencing data
 ENCFF853SOB , ENCFF888ANG , BHLHE40
 ENCSR000BRX , CEBPB # no hg19 / GRCh38                                      # need process
 ENCSR000DZN , ENCFF710VEH , CTCF # warning Insufficient read depth

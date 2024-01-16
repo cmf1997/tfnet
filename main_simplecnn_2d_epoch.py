@@ -35,11 +35,6 @@ def train(model, data_cnf, model_cnf, train_data, valid_data=None, class_weights
     if valid_data is None:
         train_data, valid_data = train_test_split(train_data, test_size=data_cnf.get('valid', 0.2),
                                                   random_state=random_state)
-    #train_loader = DataLoader(TFBindDataset(train_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
-    #                          batch_size=model_cnf['train']['batch_size'], shuffle=False)
-    #valid_loader = DataLoader(TFBindDataset(valid_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
-    #                          batch_size=model_cnf['valid']['batch_size'])
-    #model.train(train_loader, valid_loader, class_weights_dict, **model_cnf['train'])
         
     model.train(data_cnf, model_cnf, train_data, valid_data, class_weights_dict, **model_cnf['train']) # for samples_per_epoch
 
@@ -111,13 +106,13 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         test_data = get_data_fn(data_cnf['test'])
         shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
 
-        chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-2] for x in predict_data]
+        chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] + shift for x in test_data], [x[2] - shift for x in test_data], [x[-2] for x in test_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
             model = Model(SimpleCNN_2d, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
-            scores_lists.append(test(model, model_cnf, test_data=test_data))
-        output_eval(chr, start, stop, targets_lists, np.mean(scores_lists, axis=0), res_path)
+            scores_lists.append(test(model, data_cnf, model_cnf, test_data=test_data))
+        output_eval(chr, start, stop, np.array(targets_lists), np.mean(scores_lists, axis=0), res_path)
     
     elif mode == 'predict':
         predict_data = get_data_fn(data_cnf['predict'])
@@ -182,22 +177,6 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
             scores_list.append(scores_)
             output_res(group_names_, truth_, np.mean(scores_list, axis=0), res_path.with_name(f'{res_path.stem}-LOMO'))
 
-
-        '''
-    elif mode == 'binding':
-        model_cnf['padding'] = model_cnf['binding']
-        data_list = get_binding_data(data_cnf['binding'], mhc_name_seq, model_cnf['model']['peptide_pad'])
-        (core_pos, scores), correct = get_binding_core(data_list, model_cnf, model_path, start_id, num_models), 0
-        for d, core_pos_, scores_ in zip(data_list, core_pos, scores):
-            (pdb, mhc_name, core), peptide_seq = d[0], d[1]
-            core_ = peptide_seq[core_pos_: core_pos_ + 9]
-            print(pdb, mhc_name, peptide_seq, core, core_, core == core_)
-            if core != core_:
-                for i, s in enumerate(scores_[:len(peptide_seq) - len(core) + 1]):
-                    print(peptide_seq[i: i + len(core)], s)
-            correct += core_ == core
-        logger.info(f'The number of correct prediction is {correct}.')
-        '''
 
     elif mode == 'seq2logo':
         assert allele in mhc_name_seq
