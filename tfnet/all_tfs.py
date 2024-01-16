@@ -14,7 +14,7 @@ the tfs order should be the same as data/tf_chip/chip.txt
 
 
 # code
-__all__ = ['all_tfs', 'all_tfs_GM12878', 'all_tfs_K562', 'all_tfs_H1ESC', 'shared_tfs']
+__all__ = ['all_tfs', 'all_tfs_GM12878', 'all_tfs_K562', 'all_tfs_H1ESC', 'shared_tfs', 'shared_tfs_dbd']
 
 all_tfs_original = [
     "ARID3A","ATF3","ATF7","CEBPB","CREB1",
@@ -87,4 +87,14 @@ all_tfs = [
 shared_tfs = [
     'ATF3', 'CEBPB', 'CTCF', 'EGR1', 'JUND', 'MAX', 
     'MYC', 'NRF1', 'RAD21', 'REST', 'RFX5', 'SIX5', 
+    'SP1', 'SRF', 'USF2', 'YY1', 'ZNF143']
+
+
+# ---------------------- no dbd info ---------------------- #
+no_dbd = ['CCNT2', 'P300', 'RAD21', 'SMC3']
+
+
+shared_tfs_dbd = [
+    'ATF3', 'CEBPB', 'CTCF', 'EGR1', 'JUND', 'MAX', 
+    'MYC', 'NRF1', 'REST', 'RFX5', 'SIX5', 
     'SP1', 'SRF', 'USF2', 'YY1', 'ZNF143']

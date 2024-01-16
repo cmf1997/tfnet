@@ -6,7 +6,7 @@ train: data/tf_chip/H1ESC/data_train_mini_2.txt.gz
 
 train_prefix: data/tf_chip/train_mini_
 #valid: data/tf_chip/lazy/data_valid.txt.gz
-test: data/tf_chip/data_test.txt
+test: data/tf_chip/H1ESC/data_train_mini_2.txt.gz
 predict: data/tf_chip/data_test.txt
 
 genome_fasta_file: data/genome/hg19.genome.fa

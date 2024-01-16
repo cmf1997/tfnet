@@ -40,7 +40,7 @@ class SimpleCNN(Network):
 
         self.conv_off = conv_off
         linear_size = [sum(conv_num)] + linear_size
-        self.linear = nn.ModuleList([nn.Conv1d(in_s, out_s, 9, 
+        self.linear = nn.ModuleList([nn.Conv1d(in_s, out_s, 8, 
                                                #padding="same"
                                                )
                                      for in_s, out_s in zip(linear_size[:-1], linear_size[1:])])
