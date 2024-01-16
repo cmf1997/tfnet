@@ -15,7 +15,6 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
-
 from pathlib import Path
 from scipy.stats import spearmanr
 from sklearn.metrics import roc_auc_score
@@ -130,7 +129,6 @@ def output_eval(chrs, starts, stops, targets_lists, scores_lists, output_path: P
     metrics.append(get_label_ranking_average_precision_score(targets_lists, scores_lists))
     metrics.append(get_mean_accuracy_score(targets_lists, scores_lists))
     metrics.append(get_mean_balanced_accuracy_score(targets_lists, scores_lists))
-
 
     # ---------------------- plot ---------------------- #
     plot_data = pd.DataFrame({
