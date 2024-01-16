@@ -14,6 +14,7 @@ import csv
 import numpy as np
 import seaborn as sns
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from pathlib import Path
 from scipy.stats import spearmanr
@@ -130,6 +131,8 @@ def output_eval(chrs, starts, stops, targets_lists, scores_lists, output_path: P
     metrics.append(get_mean_accuracy_score(targets_lists, scores_lists))
     metrics.append(get_mean_balanced_accuracy_score(targets_lists, scores_lists))
 
+
+    # ---------------------- plot ---------------------- #
     plot_data = pd.DataFrame({
         "TF_name" : all_tfs,
         "AUC" : get_auc(targets_lists, scores_lists),
@@ -139,10 +142,39 @@ def output_eval(chrs, starts, stops, targets_lists, scores_lists, output_path: P
         }
     )
 
-    rel_plot = sns.scatterplot(data=plot_data, x="AUC", y="AUPR", hue="RECALL", size="F1")
+    plot_data.to_csv(output_path.with_suffix('.eval.repl.tsv'), sep='\t')
+
+    #sns.set(rc={'figure.figsize':(7,4)})
+    rel_plot = sns.scatterplot(data=plot_data, x="AUC", y="AUPR", hue="RECALL", size="F1", sizes=(50,200))
+    sns.move_legend(rel_plot, "upper left", bbox_to_anchor=(1, 0.75))
     fig = rel_plot.get_figure()
     fig.savefig(output_path.with_suffix('.eval.repl.pdf')) 
 
+
+    fig, axes = plt.subplots(2, 2)
+    xlabel = all_tfs
+    sns.barplot(data=plot_data, x='TF_name', y='AUC', ax=axes[0,0])
+    axes[0,0].tick_params(axis='x', labelrotation=45)
+    axes[0,0].set_xticklabels(xlabel, fontsize=4)
+    axes[0,0].set(xlabel='')
+
+    sns.barplot(data=plot_data, x='TF_name', y='AUPR', ax=axes[0,1])
+    axes[0,1].tick_params(axis='x', labelrotation=45)
+    axes[0,1].set_xticklabels(xlabel, fontsize=4)
+    axes[0,1].set(xlabel='')
+
+    sns.barplot(data=plot_data, x='TF_name', y='RECALL', ax=axes[1,0])
+    axes[1,0].tick_params(axis='x', labelrotation=45)
+    axes[1,0].set_xticklabels(xlabel, fontsize=4)
+    axes[1,0].set(xlabel='')
+
+    sns.barplot(data=plot_data, x='TF_name', y='F1', ax=axes[1,1])
+    axes[1,1].tick_params(axis='x', labelrotation=45)
+    axes[1,1].set_xticklabels(xlabel, fontsize=4)
+    axes[1,1].set(xlabel='')
+
+    fig.savefig(output_path.with_suffix('.eval.box.pdf')) 
+    # ---------------------- section ---------------------- #
 
     scores_lists = np.where(scores_lists > CUTOFF, 1, 0)
     scores_lists = np.split(scores_lists,scores_lists.shape[0], axis=0)
