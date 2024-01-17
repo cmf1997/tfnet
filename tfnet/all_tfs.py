@@ -74,8 +74,8 @@ all_tfs_K562 = [
 ]
 
 
-#all_tfs_H1ESC = [
-all_tfs = [
+all_tfs_H1ESC = [
+#all_tfs = [
     "ATF3","BACH1","BRCA1","CEBPB","CTCF","EGR1",
     "FOSL1","GABP","JUN","JUND","MAFK","MAX","MYC",
     "NRF1","P300","POU5F1","RAD21","REST","RFX5",
@@ -94,7 +94,8 @@ shared_tfs = [
 no_dbd = ['CCNT2', 'P300', 'RAD21', 'SMC3']
 
 
-shared_tfs_dbd = [
-    'ATF3', 'CEBPB', 'CTCF', 'EGR1', 'JUND', 'MAX', 
+#shared_tfs_dbd = [
+all_tfs = [
+    'CEBPB', 'CTCF', 'EGR1', 'JUND', 'MAX', 
     'MYC', 'NRF1', 'REST', 'RFX5', 'SIX5', 
     'SP1', 'SRF', 'USF2', 'YY1', 'ZNF143']
