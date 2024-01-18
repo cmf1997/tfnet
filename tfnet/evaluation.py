@@ -79,7 +79,7 @@ def get_label_ranking_average_precision_score(targets, scores):
 def get_f1(targets, scores):
     f1_list = []
     cutoffs = []
-    pre_cutoffs = [0.55,0.6,0.65,0.7,0.75,0.8,0.85]
+    pre_cutoffs = [0.55,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9]
     for i in range(targets.shape[1]):
         pre_f1_list = []
         for j in pre_cutoffs:
