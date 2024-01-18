@@ -64,7 +64,6 @@ class SimpleCNN(Network):
     def forward(self, DNA_x, tf_x, **kwargs):
         DNA_x = super(SimpleCNN, self).forward(DNA_x, tf_x)
         DNA_x = torch.transpose(DNA_x,1,2)
-
         # ----------------do not apply conv off for same output dim then iconv  ----------------#
         conv_out = torch.cat([F.relu(conv_bn(conv(DNA_x[:,:,off: DNA_x.shape[2] - off])))
                               for conv, conv_bn, off in zip(self.conv, self.conv_bn, self.conv_off)], dim=1)

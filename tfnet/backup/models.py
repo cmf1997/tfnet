@@ -20,14 +20,13 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from logzero import logger
 from typing import Optional, Mapping, Tuple
-from tfnet.evaluation import get_mean_auc, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_recall, get_mean_aupr, get_f1
+from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_recall, get_mean_aupr
 from tfnet.all_tfs import all_tfs
 import matplotlib.pyplot as plt
 import pdb
 import warnings 
 
 warnings.filterwarnings("ignore",category=UserWarning)
-np.seterr(divide='ignore', invalid='ignore')
 mps_device = torch.device("mps")
 
 # modifity the initial pcc best to -1, due to small dataset
@@ -129,16 +128,14 @@ class Model(object):
     def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.bind_list
         valid_loss = torch.nn.functional.binary_cross_entropy_with_logits(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
-        
-        f1_list, cutoffs = get_f1(targets, scores)
-        
+
         mean_auc = get_mean_auc(targets, scores)
+        f1_score = get_mean_f1(targets, scores)
+        recall_score = get_mean_recall(targets, scores)
         aupr = get_mean_aupr(targets, scores)
-        f1_score = np.mean(f1_list)
-        recall_score = get_mean_recall(targets, scores, cutoffs)
         lrap = get_label_ranking_average_precision_score(targets, scores)
-        accuracy = get_mean_accuracy_score(targets, scores, cutoffs)
-        balanced_accuracy = get_mean_balanced_accuracy_score(targets, scores, cutoffs)
+        accuracy = get_mean_accuracy_score(targets, scores)
+        balanced_accuracy = get_mean_balanced_accuracy_score(targets, scores)
 
         if mean_auc > self.training_state['best']:
             self.save_model()
