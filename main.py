@@ -130,7 +130,9 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         test_data = get_data_fn(data_cnf['test'])
         shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
 
-        chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] + shift for x in test_data], [x[2] - shift for x in test_data], [x[-2] for x in test_data]
+        #chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] + shift for x in test_data], [x[2] - shift for x in test_data], [x[-2] for x in test_data] # depend on the input data len
+        chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data], [x[-2] for x in test_data]
+
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
             model = Model(TFNet, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
@@ -173,7 +175,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 #pdb.set_trace()
 
                 #output_res(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], np.mean(scores_[cv_id == cv_], axis=0),
-                output_res(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_],          
+                output_eval(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_],          
                        res_path.with_name(f'{res_path.stem}-5CV'))
 
 
@@ -199,7 +201,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                         truth_ += [x[-1] for x in test_data_]
                         scores_ += test(model, model_cnf, test_data_).tolist()
             scores_list.append(scores_)
-            output_res(group_names_, truth_, np.mean(scores_list, axis=0), res_path.with_name(f'{res_path.stem}-LOMO'))
+            output_eval(group_names_, truth_, np.mean(scores_list, axis=0), res_path.with_name(f'{res_path.stem}-LOMO'))
 
 
         '''

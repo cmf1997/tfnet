@@ -177,6 +177,9 @@ def output_eval(chrs, starts, stops, targets_lists, scores_lists, output_path: P
 
     fig.savefig(output_path.with_suffix('.eval.box.pdf')) 
     # ---------------------- section ---------------------- #
+    ori_scores_lists = scores_lists
+    ori_scores_lists = np.split(ori_scores_lists,ori_scores_lists.shape[0], axis=0)
+    ori_scores_lists = [i.flatten().tolist() for i in ori_scores_lists]
 
     scores_lists = np.split(scores_lists,scores_lists.shape[1], axis=1)
     scores_lists_binary = []
@@ -194,9 +197,9 @@ def output_eval(chrs, starts, stops, targets_lists, scores_lists, output_path: P
 
     with open(eval_out_path, 'w') as fp:
         writer = csv.writer(fp, delimiter="\t")
-        writer.writerow(['chr', 'start', 'stop', 'targets', 'predict'])
-        for chr, start, stop, targets_list, scores_list in zip(chrs, starts, stops, targets_lists, scores_lists_array):
-            writer.writerow([chr, start, stop, targets_list, scores_list])
+        #writer.writerow(['chr', 'start', 'stop', 'targets', 'ori_predict', 'predict'])
+        for chr, start, stop, targets_list, ori_scores_list, scores_list in zip(chrs, starts, stops, targets_lists, ori_scores_lists, scores_lists_array):
+            writer.writerow([chr, start, stop, targets_list, ori_scores_list, scores_list])
     
     logger.info(
             f'mean_auc: {metrics[0]:.5f}  '

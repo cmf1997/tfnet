@@ -27,6 +27,8 @@ from sklearn.metrics import precision_recall_curve, average_precision_score, auc
 from tfnet.all_tfs import all_tfs
 from logzero import logger
 import pdb
+import warnings
+warnings.filterwarnings('error')  
 
 __all__ = ['CUTOFF', 'get_mean_auc', 'get_mean_recall', 'get_mean_aupr', 'get_mean_f1', 'get_mean_accuracy_score', 'get_mean_balanced_accuracy_score','get_label_ranking_average_precision_score', 'get_group_metrics', 'output_eval', 'output_predict']
 
@@ -113,8 +115,13 @@ def get_mean_accuracy_score(targets, scores):
 def get_mean_balanced_accuracy_score(targets, scores):
     accuracy_score_list = []
     for i in range(targets.shape[0]):
+        #try :
+        #    balanced_accuracy_score(targets[i, :], scores[i, :]> CUTOFF)   # due to all 0 in y_true
+        #except Warning as e:
+        #        pdb.set_trace()
         accuracy = balanced_accuracy_score(targets[i, :], scores[i, :]> CUTOFF)
         accuracy_score_list.append(accuracy)
+
     return np.mean(np.array(accuracy_score_list, dtype=float))
 
 
@@ -175,6 +182,9 @@ def output_eval(chrs, starts, stops, targets_lists, scores_lists, output_path: P
 
     fig.savefig(output_path.with_suffix('.eval.box.pdf')) 
     # ---------------------- section ---------------------- #
+    ori_scores_lists = scores_lists
+    ori_scores_lists = np.split(ori_scores_lists,ori_scores_lists.shape[0], axis=0)
+    ori_scores_lists = [i.flatten().tolist() for i in ori_scores_lists]
 
     scores_lists = np.where(scores_lists > CUTOFF, 1, 0)
     scores_lists = np.split(scores_lists,scores_lists.shape[0], axis=0)
@@ -184,9 +194,9 @@ def output_eval(chrs, starts, stops, targets_lists, scores_lists, output_path: P
 
     with open(eval_out_path, 'w') as fp:
         writer = csv.writer(fp, delimiter="\t")
-        writer.writerow(['chr', 'start', 'stop', 'targets', 'predict'])
-        for chr, start, stop, targets_list, scores_list in zip(chrs, starts, stops, targets_lists, scores_lists):
-            writer.writerow([chr, start, stop, targets_list, scores_list])
+        #writer.writerow(['chr', 'start', 'stop', 'targets', 'predict'])
+        for chr, start, stop, targets_list, ori_scores_list, scores_list in zip(chrs, starts, stops, targets_lists, ori_scores_lists, scores_lists):
+            writer.writerow([chr, start, stop, targets_list, ori_scores_list, scores_list])
     logger.info(
             f'mean_auc: {metrics[0]:.5f}  '
             f'aupr: {metrics[1]:.5f}  '

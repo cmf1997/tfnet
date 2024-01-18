@@ -68,7 +68,7 @@ def get_binding_core(data_list, model_cnf, model_path, start_id, num_models, cor
 @click.command()
 @click.option('-d', '--data-cnf', type=click.Path(exists=True))
 @click.option('-m', '--model-cnf', type=click.Path(exists=True))
-@click.option('--mode', type=click.Choice(('train', 'eval', 'predict','5cv', 'loo', 'lomo', 'binding', 'seq2logo')), default=None)
+@click.option('--mode', type=click.Choice(('train', 'eval', 'predict','5cv', 'loo', 'lomo')), default=None)
 @click.option('-s', '--start-id', default=0)
 @click.option('-n', '--num_models', default=1)
 @click.option('-c', '--continue', 'continue_train', is_flag=True)
@@ -105,8 +105,10 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     elif mode == 'eval':
         test_data = get_data_fn(data_cnf['test'])
         shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
+        
+        #chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] + shift for x in test_data], [x[2] - shift for x in test_data], [x[-2] for x in test_data] # depend on the input data len
+        chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data], [x[-2] for x in test_data]
 
-        chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] + shift for x in test_data], [x[2] - shift for x in test_data], [x[-2] for x in test_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
             model = Model(SimpleCNN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
@@ -149,7 +151,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 #pdb.set_trace()
 
                 #output_res(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], np.mean(scores_[cv_id == cv_], axis=0),
-                output_res(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_],          
+                output_eval(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_],          
                        res_path.with_name(f'{res_path.stem}-5CV'))
 
 
@@ -175,22 +177,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                         truth_ += [x[-1] for x in test_data_]
                         scores_ += test(model, model_cnf, test_data_).tolist()
             scores_list.append(scores_)
-            output_res(group_names_, truth_, np.mean(scores_list, axis=0), res_path.with_name(f'{res_path.stem}-LOMO'))
-
-
-    elif mode == 'seq2logo':
-        assert allele in mhc_name_seq
-        data_list = get_seq2logo_data(data_cnf['seq2logo'], allele, mhc_name_seq[allele])
-        scores_list = []
-        for model_id in range(start_id, start_id + num_models):
-            model = Model(SimpleCNN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False, class_weights_dict = class_weights_dict,
-                          **model_cnf['model'])
-            scores_list.append(test(model, model_cnf, data_list))
-        scores = np.mean(scores_list, axis=0)
-        s_, p_ = scores.max(axis=1), scores.argmax(axis=1)
-        with open(res_path.with_name(f'{res_path.stem}-seq2logo-{allele}.txt'), 'w') as fp:
-            for k in (-s_).argsort()[:int(0.01 * len(s_))]:
-                print(data_list[k][1][p_[k]: p_[k] + 9], file=fp)
+            output_eval(group_names_, truth_, np.mean(scores_list, axis=0), res_path.with_name(f'{res_path.stem}-LOMO'))
 
 
 if __name__ == '__main__':
