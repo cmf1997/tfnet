@@ -111,10 +111,62 @@ sns.relplot(
     #col="type", col_wrap=2,
     palette=palette,
     height=5,
-    aspect=1.8,
+    aspect=1.4,
     lw=3.5, alpha = 0.7
 )
-plt.title("Cross Cell Line Prediction")
+plt.title("Cross Cell Line Prediction - K562 test dataset")
+plt.tick_params(axis='x', labelrotation=45)
 plt.xlabel("")
 plt.ylabel("AUC")
 plt.savefig("results/predict_K562.eval.AUC.pdf")
+
+
+# ---------------------- plot auc of model G and H for eval G and H test dataset ---------------------- #
+G_eval_G = pd.read_csv('results/G_eval_G_SimpleCNN_2d.eval.repl.tsv', sep='\t', index_col=0, header=0)
+G_eval_G['Model'] = 'GM12878'
+G_eval_H = pd.read_csv('results/G_eval_H_SimpleCNN_2d.eval.repl.tsv', sep='\t', index_col=0, header=0)
+G_eval_H['Model'] = 'GM12878'
+H_eval_G = pd.read_csv('results/H_eval_G_SimpleCNN_2d.eval.repl.tsv', sep='\t', index_col=0, header=0)
+H_eval_G['Model'] = 'H1ESC'
+H_eval_H = pd.read_csv('results/H_eval_H_SimpleCNN_2d.eval.repl.tsv', sep='\t', index_col=0, header=0)
+H_eval_H['Model'] = 'H1ESC'
+
+eval_G = pd.concat([G_eval_G[['TF_name', 'AUC', 'Model']], H_eval_G[['TF_name', 'AUC', 'Model']]])
+eval_H = pd.concat([G_eval_H[['TF_name', 'AUC', 'Model']], H_eval_H[['TF_name', 'AUC', 'Model']]])
+
+sns.relplot(
+    data=eval_G,
+    x="TF_name", y="AUC",
+    hue="Model",
+    kind='line', 
+    #col="type", col_wrap=2,
+    palette=palette[:2],
+    height=5,
+    aspect=1.4,
+    lw=3.5, alpha = 0.7
+)
+plt.title("Cross Cell Line Prediction - GM12878 test dataset")
+plt.tick_params(axis='x', labelrotation=45)
+plt.xlabel("")
+plt.ylabel("AUC")
+plt.savefig("results/predict_GM12878.eval.AUC.pdf")
+
+
+sns.relplot(
+    data=eval_H,
+    x="TF_name", y="AUC",
+    hue="Model",
+    kind='line', 
+    #col="type", col_wrap=2,
+    palette=palette[:2],
+    height=5,
+    aspect=1.4,
+    lw=3.5, alpha = 0.7
+)
+plt.title("Cross Cell Line Prediction - H1ESC test dataset")
+plt.tick_params(axis='x', labelrotation=45)
+plt.xlabel("")
+plt.ylabel("AUC")
+plt.savefig("results/predict_H1ESC.eval.AUC.pdf")
+
+
