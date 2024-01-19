@@ -7,11 +7,11 @@ model:
   conv_num: [128, 128, 128, 128, 128]
   #conv_num: [16, 16, 16, 16, 16]
   conv_off: [8, 6, 4, 2, 0]
-  linear_size: [256, 512, 128]
+  linear_size: [128, 256, 512]
   #linear_size: [128, 256, 512]
 
 
-  full_size: [13952, 1024] # the frist size should be [len(all_tfs) * 1024/(4**len(maxpool))] # 1856 for two maxpool, 7424 for one maxpool
+  full_size: [24576, 1024] # the frist size should be [len(all_tfs) * 1024/(4**len(maxpool))] # 1856 for two maxpool, 7424 for one maxpool
 
   dropouts: [0.2, 0.5]
 

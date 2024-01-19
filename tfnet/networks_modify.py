@@ -119,6 +119,7 @@ class TFNet(Network):
 
         # ---------------- flatten and output ----------------#
         conv_out = torch.flatten(conv_out, start_dim = 1)
+        #pdb.set_trace()
 
         #for index, (full, full_bn) in enumerate(zip(self.full_connect, self.full_connect_bn)):
         for index, full in enumerate(self.full_connect):
