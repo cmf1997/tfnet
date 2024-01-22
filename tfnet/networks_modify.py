@@ -99,6 +99,8 @@ class TFNet(Network):
             conv_linear_max_pool.append(conv_1)
 
         conv_out = torch.stack(conv_linear_max_pool,dim=-1)
+        conv_out = self.dropout[0](conv_out)   
+        # torch.Size([bs, oc_conv_linear, 61, len(all_tfs)])
 
 
         # ---------------------- flatten start from dim 2 ---------------------- #
@@ -113,7 +115,6 @@ class TFNet(Network):
             else:
                 conv_out = F.max_pool1d(conv_out,4,4)
                 conv_out = self.dropout[0](conv_out)
-
 
         # torch.Size([bs, conv_linear, (DNA_len - conv)/4**len(maxpool), len(all_tfs)])
 

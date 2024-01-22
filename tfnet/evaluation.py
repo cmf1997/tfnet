@@ -20,6 +20,7 @@ from pathlib import Path
 from scipy.stats import spearmanr
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import f1_score
+from sklearn.metrics import precision_score
 from sklearn.metrics import label_ranking_average_precision_score
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from sklearn.metrics import recall_score
@@ -30,7 +31,7 @@ import pdb
 import warnings
 warnings.filterwarnings('error')  
 
-__all__ = ['CUTOFF', 'get_mean_auc', 'get_mean_recall', 'get_mean_aupr', 'get_mean_f1', 'get_mean_accuracy_score', 'get_mean_balanced_accuracy_score','get_label_ranking_average_precision_score', 'get_group_metrics', 'output_eval', 'output_predict']
+__all__ = ['CUTOFF', 'get_mean_auc', 'get_auc', 'get_recall', 'get_f1', 'get_precision', 'get_mean_precision', 'get_mean_recall', 'get_mean_aupr', 'get_mean_f1', 'get_mean_accuracy_score', 'get_balanced_accuracy_score', 'get_mean_balanced_accuracy_score','get_label_ranking_average_precision_score', 'get_group_metrics', 'output_eval', 'output_predict']
 
 CUTOFF = 0.8
 
@@ -53,20 +54,30 @@ def get_auc(targets, scores):
     return auc_scores
 
 
-def get_mean_recall(targets, scores):
+def get_recall(targets, scores, cutoff = CUTOFF):
     recall_list = []
     for i in range(targets.shape[1]):
-        recall = recall_score(targets[:, i], scores[:, i]> CUTOFF, zero_division=0.0)
-        recall_list.append(recall)
-    return np.mean(np.array(recall_list, dtype=float))    
-
-
-def get_recall(targets, scores):
-    recall_list = []
-    for i in range(targets.shape[1]):
-        recall = recall_score(targets[:, i], scores[:, i]> CUTOFF, zero_division=1.0)
+        recall = recall_score(targets[:, i], scores[:, i]> cutoff, zero_division=1.0)
         recall_list.append(recall)
     return recall_list
+
+
+def get_mean_recall(targets, scores, cutoff = CUTOFF):
+    recall_list = get_recall(targets, scores, cutoff)
+    return np.mean(recall_list)    
+
+
+def get_precision(targets, scores, cutoff = CUTOFF):
+    precision_list = []
+    for i in range(targets.shape[1]):
+        precision = precision_score(targets[:, i], scores[:, i]> cutoff, zero_division=1.0)
+        precision_list.append(precision)
+    return precision_list
+
+
+def get_mean_precision(targets, scores, cutoff = CUTOFF):
+    precision_list = get_precision(targets, scores, cutoff = cutoff)
+    return np.mean(precision_list)
 
 
 def get_mean_aupr(targets, scores):
@@ -93,36 +104,51 @@ def get_label_ranking_average_precision_score(targets, scores):
     return label_ranking_average_precision_score(targets, scores)
 
 
-def get_mean_f1(targets, scores):
-    return f1_score(targets, scores > CUTOFF, average='macro', zero_division=1.0)
+def get_mean_f1(targets, scores, cutoff=CUTOFF):
+    return f1_score(targets, scores > cutoff, average='macro', zero_division=1.0)
 
 
-def get_f1(targets, scores):
+def get_f1(targets, scores, cutoff=CUTOFF):
     f1_list = []
     for i in range(targets.shape[1]):
-        f1_list.append(f1_score(targets[:, i], scores[:, i] > CUTOFF, zero_division=1.0))
+        f1_list.append(f1_score(targets[:, i], scores[:, i] > cutoff, zero_division=1.0))
     return f1_list
 
 
-def get_mean_accuracy_score(targets, scores):
+def get_mean_accuracy_score(targets, scores, axis = 0, cutoff=CUTOFF):
     accuracy_score_list = []
-    for i in range(targets.shape[0]):
-        accuracy = accuracy_score(targets[i, :], scores[i, :]> CUTOFF)
-        accuracy_score_list.append(accuracy)
+    if axis == 0:
+        for i in range(targets.shape[0]):
+            accuracy = accuracy_score(targets[i, :], scores[i, :]> cutoff)
+            accuracy_score_list.append(accuracy)
+    elif axis == 1:
+        for i in range(targets.shape[1]):
+            accuracy = accuracy_score(targets[:, i], scores[:, i]> cutoff)
+            accuracy_score_list.append(accuracy)
     return np.mean(np.array(accuracy_score_list, dtype=float))
 
 
-def get_mean_balanced_accuracy_score(targets, scores):
+def get_balanced_accuracy_score(targets, scores, axis = 0, cutoff=CUTOFF):
     accuracy_score_list = []
-    for i in range(targets.shape[0]):
-        #try :
-        #    balanced_accuracy_score(targets[i, :], scores[i, :]> CUTOFF)   # due to all 0 in y_true
-        #except Warning as e:
-        #        pdb.set_trace()
-        accuracy = balanced_accuracy_score(targets[i, :], scores[i, :]> CUTOFF)
-        accuracy_score_list.append(accuracy)
+    if axis == 0:
+        for i in range(targets.shape[0]):
+            accuracy = balanced_accuracy_score(targets[i, :], scores[i, :]> cutoff)
+            accuracy_score_list.append(accuracy)
+    elif axis == 1:
+        for i in range(targets.shape[1]):
+            accuracy = balanced_accuracy_score(targets[:, i], scores[:, i]> cutoff)
+            accuracy_score_list.append(accuracy)        
+    return accuracy_score_list
 
-    return np.mean(np.array(accuracy_score_list, dtype=float))
+#try :
+#    balanced_accuracy_score(targets[i, :], scores[i, :]> CUTOFF)   # due to all 0 in y_true
+#except Warning as e:
+#        pdb.set_trace()
+
+
+def get_mean_balanced_accuracy_score(targets, scores, axis = 0, cutoff=CUTOFF):
+    accuracy_score_list = get_balanced_accuracy_score(targets, scores, axis = axis, cutoff=cutoff)
+    return np.mean(accuracy_score_list)
 
 
 def output_eval(chrs, starts, stops, targets_lists, scores_lists, output_path: Path):
