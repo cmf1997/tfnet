@@ -6,6 +6,8 @@ from tfnet.all_tfs import all_tfs
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.metrics import RocCurveDisplay
+import scikitplot as skplt
 from tfnet.evaluation import get_mean_auc, get_auc, get_mean_f1, get_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_recall, get_recall, get_mean_aupr, get_aupr, get_precision, get_mean_precision
 import warnings
 import sys
@@ -248,26 +250,47 @@ plt.savefig("results/eval.GM12878.compare.classweight.pdf")
 '''
 
 
-# ---------------------- pseudosequences tfnet ---------------------- #
-# ---------------------- pseudosequences tfnet ---------------------- #
-pre_cutoffs = [0.4, 0.45, 0.5, 0.55, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]
+# ---------------------- pseudosequences tfnet_5 ---------------------- #
+# ---------------------- pseudosequences tfnet_5 ---------------------- #
+
 
 # ---------------------- load data ---------------------- #
-targets_array_tfnet, ori_predict_array_tfnet ,predict_array_tfnet = read_predict("/Users/cmf/Downloads/TFNet-multi-tf/results/tfnet/TFNet.eval.tsv")
+targets_array_tfnet, ori_predict_array_tfnet ,predict_array_tfnet = read_predict("/Users/cmf/Downloads/TFNet-multi-tf/results/tfnet_5/TFNet.eval.tsv")
 targets_array_weight, ori_predict_array_weight ,predict_array_weight = read_predict("/Users/cmf/Downloads/TFNet-multi-tf/results/classweight/weight/SimpleCNN_2d.eval.tsv")
 targets_array_noweight, ori_predict_array_noweight ,predict_array_noweight = read_predict("/Users/cmf/Downloads/TFNet-multi-tf/results/classweight/noweight/SimpleCNN_2d.eval.tsv")
 
 # ---------------------- auc aupr ---------------------- #
-auc_tfnet = get_auc(targets_array_tfnet, ori_predict_array_tfnet)
-auc_weight = get_auc(targets_array_weight, ori_predict_array_weight)
-auc_noweight = get_auc(targets_array_noweight, ori_predict_array_noweight)
+#RocCurveDisplay.from_predictions(targets_array_tfnet[:,1], ori_predict_array_tfnet[:,1])
 
-aupr_weight = get_aupr(targets_array_tfnet, ori_predict_array_tfnet)
-aupr_weight = get_aupr(targets_array_weight, ori_predict_array_weight)
-aupr_noweight = get_aupr(targets_array_noweight, ori_predict_array_noweight)
+auc_data = pd.DataFrame({"TF" : all_tfs,
+                        "AUC_Weight":get_auc(targets_array_weight, ori_predict_array_weight),
+                        "AUC" : get_auc(targets_array_noweight, ori_predict_array_noweight),
+                        "AUC_TFNet" : get_auc(targets_array_tfnet, ori_predict_array_tfnet)
+                        }).melt(id_vars=['TF'],var_name="Model", value_name="value")
+plt.clf()
+sns.barplot(auc_data, x="TF", y="value", hue="Model", dodge=True, alpha=0.8, palette=palette[:3])
+plt.xlabel("")
+plt.ylabel("AUC")
+plt.tick_params(axis='x', labelrotation=45)
+plt.savefig("results/tfnet_5/eval.GM12878.auc.pdf")
+
+
+aupr_data = pd.DataFrame({"TF" : all_tfs,
+                        "AUPR_Weight":get_aupr(targets_array_weight, ori_predict_array_weight),
+                        "AUPR" : get_aupr(targets_array_noweight, ori_predict_array_noweight),
+                        "AUPR_TFNet" : get_aupr(targets_array_tfnet, ori_predict_array_tfnet)
+                        }).melt(id_vars=['TF'],var_name="Model", value_name="value")
+plt.clf()
+sns.barplot(aupr_data, x="TF", y="value", hue="Model", dodge=True, alpha=0.8, palette=palette[:3])
+plt.xlabel("")
+plt.ylabel("AUPR")
+plt.tick_params(axis='x', labelrotation=45)
+plt.savefig("results/tfnet_5/eval.GM12878.aupr.pdf")
 
 
 # ---------------------- eval ---------------------- #
+pre_cutoffs = [0.4, 0.45, 0.5, 0.55, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]
+
 cutoffs = []
 
 recall_tfnet = []
@@ -288,39 +311,35 @@ balanced_accuracy_noweight = []
 
 for cutoff in pre_cutoffs:
     cutoffs.append(cutoff)
-
-    recall_tfnet.append(get_mean_recall(targets_array_tfnet, ori_predict_array_tfnet, cutoff=cutoff))
     recall_weight.append(get_mean_recall(targets_array_weight, ori_predict_array_weight, cutoff=cutoff))
     recall_noweight.append(get_mean_recall(targets_array_noweight, ori_predict_array_noweight, cutoff=cutoff))
-
-    precision_tfnet.append(get_mean_precision(targets_array_tfnet, ori_predict_array_tfnet, cutoff=cutoff))
+    recall_tfnet.append(get_mean_recall(targets_array_tfnet, ori_predict_array_tfnet, cutoff=cutoff))
     precision_weight.append(get_mean_precision(targets_array_weight, ori_predict_array_weight, cutoff=cutoff))
     precision_noweight.append(get_mean_precision(targets_array_noweight, ori_predict_array_noweight, cutoff=cutoff))
-
-    f1_tfnet.append(get_mean_f1(targets_array_tfnet, ori_predict_array_tfnet, cutoff=cutoff))
+    precision_tfnet.append(get_mean_precision(targets_array_tfnet, ori_predict_array_tfnet, cutoff=cutoff))
     f1_weight.append(get_mean_f1(targets_array_weight, ori_predict_array_weight, cutoff=cutoff))
     f1_noweight.append(get_mean_f1(targets_array_noweight, ori_predict_array_noweight, cutoff=cutoff))
-
-    balanced_accuracy_tfnet.append(get_mean_balanced_accuracy_score(targets_array_tfnet, ori_predict_array_tfnet, axis = 0, cutoff=cutoff))
+    f1_tfnet.append(get_mean_f1(targets_array_tfnet, ori_predict_array_tfnet, cutoff=cutoff))
     balanced_accuracy_weight.append(get_mean_balanced_accuracy_score(targets_array_weight, ori_predict_array_weight, axis = 0, cutoff=cutoff))
     balanced_accuracy_noweight.append(get_mean_balanced_accuracy_score(targets_array_noweight, ori_predict_array_noweight, axis = 0, cutoff=cutoff))
+    balanced_accuracy_tfnet.append(get_mean_balanced_accuracy_score(targets_array_tfnet, ori_predict_array_tfnet, axis = 0, cutoff=cutoff))
 
 cutoff_data = pd.DataFrame({"CUTOFF" : cutoffs,
-                        "RECALL_tfnet" : recall_tfnet,
                         "RECALL_classweight":recall_weight,
                         "RECALL" : recall_noweight,
+                        "RECALL_TFNet" : recall_tfnet,
 
-                        "PRECISION_tfnet" : precision_tfnet,
                         "PRECISION_classweight" : precision_weight,
                         "PRECISION" : precision_noweight,
+                        "PRECISION_TFNet" : precision_tfnet,
 
-                        "F1_tfnet" : f1_tfnet,
                         "F1_classweight": f1_weight,
                         "F1" : f1_noweight,
+                        "F1_TFNet" : f1_tfnet,
 
-                        "BALANCE_ACCURACY_tfnet" : balanced_accuracy_tfnet,
                         "BALANCE_ACCURACY_classweight" : balanced_accuracy_weight,
-                        "BALANCE_ACCURACY" : balanced_accuracy_noweight
+                        "BALANCE_ACCURACY" : balanced_accuracy_noweight,
+                        "BALANCE_ACCURACY_TFNet" : balanced_accuracy_tfnet
                         })
 
 cutoff_data = cutoff_data.melt(id_vars=['CUTOFF'],var_name="Model", value_name="value")
@@ -339,7 +358,5 @@ sns.relplot(
     lw=6, alpha = 0.7,
     facet_kws={'sharey': False, 'sharex': False}
 )
-plt.title("pseudosequence TFNet")
-plt.xlabel("CUTOFF")
-plt.ylabel("Value")
-plt.savefig("results/eval.GM12878.compare.tfnet.pdf")
+plt.title("for each tfs")
+plt.savefig("results/tfnet_5/eval.GM12878.compare.tfnet.pdf")
