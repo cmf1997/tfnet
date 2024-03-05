@@ -20,7 +20,7 @@ import pysam
 from logzero import logger
 import pdb
 
-__all__ = ['ACIDS', 'get_tf_name_seq', 'get_data', 'get_data_lazy', 'get_binding_data', 'calculate_class_weights_dict','get_seq2logo_data', 'set_DNA_len','get_model_parameters']
+__all__ = ['ACIDS', 'get_tf_name_seq', 'get_data', 'get_data_lazy', 'get_binding_data', 'calculate_class_weights_dict', 'calculate_class_weights_dict_from_data','get_seq2logo_data', 'set_DNA_len','get_model_parameters']
 
 ACIDS = '0-ACDEFGHIKLMNPQRSTVWY'
 
@@ -123,6 +123,22 @@ def calculate_class_weights_dict(data_file):
         class_weights_dict[label] = {cls: weight for cls, weight in zip(classes, class_weights)}
     
     return class_weights_dict
+
+
+def calculate_class_weights_dict_from_data(data_list):
+    bind_list = np.array([ i[3] for i in data_list])
+    num_labels = bind_list.shape[1]
+    class_weights_dict = {}
+
+    # Calculate class weights for each binary label independently
+    for label in range(num_labels):
+        classes = np.unique(bind_list[:, label])
+        class_weights = compute_class_weight(class_weight='balanced', classes = classes, y=bind_list[:, label])
+        class_weights_dict[label] = {cls: weight for cls, weight in zip(classes, class_weights)}
+    
+    return class_weights_dict
+
+
 
 
 def get_binding_data(data_file, tf_name_seq, peptide_pad=3, core_len=9):

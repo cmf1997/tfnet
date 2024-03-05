@@ -23,6 +23,7 @@ from logzero import logger
 from typing import Optional, Mapping, Tuple
 from tfnet.evaluation import get_mean_auc, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_recall, get_mean_aupr, get_f1, get_mean_f1
 from tfnet.all_tfs import all_tfs
+from tfnet.data_utils import calculate_class_weights_dict_from_data
 import matplotlib.pyplot as plt
 import pdb
 import warnings 
@@ -70,8 +71,8 @@ class Model(object):
         self.optimizer = None
         self.training_state = {}
 
-        self.early_stopper_1 = EarlyStopper(patience=10, min_delta=0.4)
-        self.early_stopper_2 = EarlyStopper(patience=10, min_delta=0.4)
+        self.early_stopper_1 = EarlyStopper(patience=10, min_delta=0.005)
+        self.early_stopper_2 = EarlyStopper(patience=10, min_delta=0.005)
 
     def get_scores(self, inputs, **kwargs):
         return self.model(*(x.to(mps_device) for x in inputs), **kwargs)
@@ -116,10 +117,12 @@ class Model(object):
         
         valid_loader = DataLoader(TFBindDataset(valid_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
                               batch_size=model_cnf['valid']['batch_size']) 
-        W_values = np.linspace(0, len(train_data), num_epochs + 1)
+        
+        # ---------------------- default split data into 5 part ---------------------- #
+        W_values = np.linspace(0, len(train_data), 5 + 1)
         W_chunks = list(map(int, W_values))
 
-        num_epochs = num_epochs * 20 # custom true epoch for entire dataset
+        num_epochs = num_epochs * 5 # custom true epoch for entire dataset
 
     # ---------------------- section ---------------------- #
     
@@ -129,22 +132,25 @@ class Model(object):
         for epoch_idx in range(num_epochs):
             train_loss = 0.0
             
-            epoch_idx %= 5 # due to the formation of train dataset
+            epoch_idx %= 5 # default split data into 5 part
 
             # ---------------------- for samples_per_epoch ---------------------- #
-
             train_data_single_epoch = train_data[W_chunks[epoch_idx]: W_chunks[epoch_idx + 1]]
+
+            # ---------------------- computing calculate class weights ---------------------- #
+            class_weights_dict_single_epoch = calculate_class_weights_dict_from_data(train_data_single_epoch)
+
             train_loader = DataLoader(TFBindDataset(train_data_single_epoch, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
                               batch_size=model_cnf['train']['batch_size'], shuffle=False)
             # ---------------------- section ---------------------- #
 
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
-                train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
+                train_loss += self.train_step(inputs, targets, class_weights_dict_single_epoch, **kwargs) * targets.shape[0]
 
             train_loss /= len(train_loader.dataset)
             #train_loss /= len(train_loader.dataset)
 
-            balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
+            balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict_single_epoch)
             if self.early_stopper_1.early_stop(valid_loss):
                 logger.info(f'Early Stopping due to valid loss')
                 break
