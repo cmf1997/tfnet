@@ -183,9 +183,9 @@ def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, tar
     
 
     print('Getting negative training examples')
-    negative_windows_train = BedTool.cat(*(epochs*[positive_windows]), postmerge=False) # for samples_per_epoch
-    negative_windows_train = negative_windows_train.shuffle(g=genome_sizes_file, # for samples_per_epoch
-    #negative_windows_train = positive_windows_train.shuffle(g=genome_sizes_file, # for single epoch
+    #negative_windows_train = BedTool.cat(*(epochs*[positive_windows]), postmerge=False) # for samples_per_epoch
+    #negative_windows_train = negative_windows_train.shuffle(g=genome_sizes_file, # for samples_per_epoch
+    negative_windows_train = positive_windows_train.shuffle(g=genome_sizes_file, # for single epoch
                                                             incl=genome_bed_train.fn,
                                                             excl=nonnegative_regions_bed.fn,
                                                             noOverlapping=False,
@@ -235,6 +235,7 @@ def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, tar
     print('Shuffling training data')
 
     # ---------------------- for samples_per_epoch ---------------------- #
+    '''
     data_train = []
     for i in range(epochs):
         epoch_data = []
@@ -242,11 +243,12 @@ def make_features_multiTask(genome_sizes_file, positive_windows, y_positive, tar
         epoch_data.extend(negative_data_train[i*num_positive_train_windows:(i+1)*num_positive_train_windows]) # for samples_per_epoch
         np.random.shuffle(epoch_data)
         data_train.extend(epoch_data)
+    '''
 
 
     # ---------------------- for single epoch ---------------------- #
-    #data_train = negative_data_train + positive_data_train
-    #np.random.shuffle(data_train)
+    data_train = negative_data_train + positive_data_train
+    np.random.shuffle(data_train)
 
     # ---------------------- write result ---------------------- #
     write_result("data_train", data_train, result_filefolder)
