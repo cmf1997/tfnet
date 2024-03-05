@@ -2,15 +2,17 @@ name: SimpleCNN_2d
 path: models
 
 model:
-  emb_size: 8 # depending on number of bw       # for simplecnn_2d
+  emb_size: 6 # depending on number of bw       # for simplecnn_2d
   conv_size: [5, 9, 13, 17, 21]
   conv_num: [64, 128, 256, 512, 1024]
   conv_off: [8, 6, 4, 2, 0]
   #linear_size: [256, 288, 323, 363, 407, 512]
   #linear_size: [320,480,960] # parameter for deepSEA # for simplecnn_2d  
-  linear_size: [160, 240, 480] # reduced parameter adopt for scFAN
+  #linear_size: [160, 240, 480] # reduced parameter adopt for scFAN
+  linear_size: [320, 480, 960] # parameter adopt for deepsea
 
-  full_size: [25920 ,1024] # for simple cnn #25920 for kernel size 8 / 25440 for kernel size 9
+  #full_size: [25920 ,1024] # for simple cnn #25920 for kernel size 8 / 25440 for kernel size 9
+  full_size: [51840 ,1024] # for deepsea
 
   dropouts: [0.2, 0.5]
 

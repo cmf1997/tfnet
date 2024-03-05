@@ -31,7 +31,7 @@ class TFBindDataset(Dataset):
     def __init__(self, data_list, genome_fasta_file, bw_file, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0, target_len=200, DNA_N = True):
         self.DNA_N = DNA_N
         self.data_list = data_list
-        self.DNA_x, self.tf_x, self.targets = [], [], []
+        self.DNA_x, self.tf_x = [], []
         self.genome_fasta = pysam.Fastafile(genome_fasta_file)
         self.bigwig_data = {}
         for index, single_bw_file in enumerate(bw_file):

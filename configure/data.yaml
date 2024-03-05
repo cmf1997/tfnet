@@ -1,9 +1,11 @@
 tf_seq : data/tf_pseudosequences.txt
 
-train: data/tf_chip/shared_cross_data/GM12878/data_train_mini.txt.gz
+train: data/tf_chip/shared_cross_data/GM12878/data_test.txt.gz
 
-train_prefix: data/tf_chip/train_mini_
-#valid: data/tf_chip/lazy/data_valid.txt.gz
+train_prefix: data/tf_chip/shared_cross_data/GM12878/mini_
+# when using train_prefix by split, must enable valid dataset
+#valid: data/tf_chip/shared_cross_data/GM12878/data_valid.txt.gz
+
 test: data/tf_chip/shared_cross_data/GM12878/data_train_mini.txt.gz
 predict: data/tf_chip/shared_cross_data/GM12878/data_train_mini.txt.gz
 

@@ -69,8 +69,8 @@ class Model(object):
         self.optimizer = None
         self.training_state = {}
 
-        self.early_stopper_1 = EarlyStopper(patience=10, min_delta=0.4)
-        self.early_stopper_2 = EarlyStopper(patience=10, min_delta=0.4)
+        self.early_stopper_1 = EarlyStopper(patience=10, min_delta=0.005)
+        self.early_stopper_2 = EarlyStopper(patience=10, min_delta=0.005)
 
     def get_scores(self, inputs, **kwargs):
         return self.model(*(x.to(mps_device) for x in inputs), **kwargs)
