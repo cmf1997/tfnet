@@ -1,10 +1,10 @@
-name: DeepATT
+name: Deepformer
 path: models
 
 model:
   emb_size: 6 # depending on number of bw       # for simplecnn_2d
-  linear_size: [1024]
-  full_size: [400, 100, 1]
+  linear_size: [320, 480, 960] # parameter adopt for deepsea
+  full_size: [51840 ,1024] # for deepsea
   dropouts: [0.2, 0.5]
   DNA_pad: 10
 
@@ -18,7 +18,7 @@ padding:
 
 train:
   batch_size: 64
-  num_epochs: 20
+  num_epochs: 5
   opt_params:
     #optimizer_cls: Adadelta
     #lr: 0.05

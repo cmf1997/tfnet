@@ -10,12 +10,10 @@
 '''
 
 # here put the import lib
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from tfnet.data_utils import ACIDS
 from tfnet.all_tfs import all_tfs
 from tfnet.modules import *
 import pdb

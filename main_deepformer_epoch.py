@@ -22,7 +22,7 @@ from logzero import logger
 from tfnet.data_utils import *
 from tfnet.datasets import TFBindDataset
 from tfnet.models_epoch import Model
-from tfnet.networks_att import DeepATT
+from tfnet.networks_deepformer import DeepFormer
 from tfnet.evaluation import output_eval, output_predict, CUTOFF
 from tfnet.all_tfs import all_tfs
 
@@ -59,7 +59,7 @@ def generate_cv_id(length, num_groups=5):
 def get_binding_core(data_list, model_cnf, model_path, start_id, num_models, core_len=9):
     scores_list = []
     for model_id in range(start_id, start_id + num_models):
-        model = Model(DeepATT, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False,
+        model = Model(DeepFormer, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False,
                       **model_cnf['model'])
         scores_list.append(test(model, model_cnf, data_list))
     return (scores:=np.mean(scores_list, axis=0)).argmax(-1), scores
@@ -97,7 +97,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
         valid_data = get_data_fn(data_cnf['valid']) if train_data is not None and 'valid' in data_cnf else None
         for model_id in range(start_id, start_id + num_models):
-            model = Model(DeepATT, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+            model = Model(DeepFormer, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             if not continue_train or not model.model_path.exists():
                 train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
@@ -111,7 +111,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
 
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
-            model = Model(DeepATT, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+            model = Model(DeepFormer, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             scores_lists.append(test(model, data_cnf, model_cnf, test_data=test_data))
         output_eval(chr, start, stop, np.array(targets_lists), np.mean(scores_lists, axis=0), res_path)
@@ -123,7 +123,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-2] for x in predict_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
-            model = Model(DeepATT, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+            model = Model(DeepFormer, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             scores_lists.append(test(model, data_cnf, model_cnf, test_data=predict_data))
         output_predict(chr, start, stop, np.mean(scores_lists, axis=0), res_path)
@@ -141,7 +141,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
             for cv_ in range(5):
                 
                 train_data, test_data = data[cv_id != cv_], data[cv_id == cv_]
-                model = Model(DeepATT, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
+                model = Model(DeepFormer, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
                               **model_cnf['model'])
                 if not continue_train or not model.model_path.exists():
                     train(model, data_cnf, model_cnf, train_data=train_data, class_weights_dict = class_weights_dict)
@@ -167,7 +167,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 test_data, test_cv_id = data[group_names == name_], cv_id[group_names == name_]
                 if len(test_data) > 30 and len([x[-1] for x in test_data if x[-1] >= CUTOFF]) >= 3:
                     for cv_ in range(5):
-                        model = Model(DeepATT,
+                        model = Model(DeepFormer,
                                       model_path=model_path.with_stem(F'{model_path.stem}-{name_}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
                                       **model_cnf['model'])
                         if not model.model_path.exists() or not continue_train:
