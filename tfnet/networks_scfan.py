@@ -17,7 +17,7 @@ import pdb
 
 from tfnet.all_tfs import all_tfs
 
-__all__ = ['SimpleCNN']
+__all__ = ['scFAN']
 
 # code
 class Network(nn.Module):
@@ -29,20 +29,16 @@ class Network(nn.Module):
         return DNA_x
 
 
-class SimpleCNN_2d(Network):
+class scFAN(Network):
     def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, dropouts, **kwargs):
-        super(SimpleCNN_2d, self).__init__(**kwargs)
+        super(scFAN, self).__init__(**kwargs)
 
-        #in_channels = [int(emb_size)] + conv_num  # depend on embedding
         in_channels = [int(emb_size)] + linear_size  # depend on embedding
         
         # ---------------------- nn.Conv2d size (1,8) for deepsea ---------------------- #
-        #self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,9),(1,1),padding="same") for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
         self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,8),(1,1)) for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
-        #self.conv = nn.ModuleList([nn.Conv2d(in_channel,out_channel,(1,9),(1,1)) for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
         self.conv_bn = nn.ModuleList([nn.BatchNorm2d(out_channel) for out_channel in in_channels[1:]])          
 
-        #full_size_first = [25440] # [linear_size[-1] * 1024(DNA_len + 2*DNA_pad - conv_off - 2 * conv_size + 1) / 4**len(max_pool) ] （smaller due to conv）
         full_size = full_size + [len(all_tfs)]
         self.full_connect = nn.ModuleList([nn.Linear(in_s, out_s) for in_s, out_s in zip(full_size[:-1], full_size[1:])])
         self.full_connect_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in full_size[1:]] )
@@ -52,7 +48,7 @@ class SimpleCNN_2d(Network):
         self.reset_parameters()
 
     def forward(self, DNA_x, tf_x, **kwargs):
-        DNA_x = super(SimpleCNN_2d, self).forward(DNA_x, tf_x)
+        DNA_x = super(scFAN, self).forward(DNA_x, tf_x)
 
         DNA_x = torch.transpose(DNA_x,1,2)
         DNA_x = DNA_x.unsqueeze(2)

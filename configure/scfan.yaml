@@ -1,10 +1,10 @@
-name: TFNet
+name: scFAN
 path: models
 
 model:
-  emb_size: 6 # based on datasets_tfnet.py
-  linear_size: [320]
-  full_size: [48640, 925]
+  emb_size: 6    
+  linear_size: [160, 240, 240] 
+  full_size: [15360 ,919] 
   dropouts: [0.2, 0.5]
   DNA_pad: 10
 
@@ -13,23 +13,21 @@ padding:
   DNA_len: 1024
   DNA_pad: 10
   tf_len: 20
+
   DNA_N: False
 
 train:
   batch_size: 64
   num_epochs: 5
   opt_params:
-    #optimizer_cls: Adadelta
-    #lr: 0.01
     weight_decay: 5e-07
     optimizer_cls: Adam
     lr: 0.001
-
 
 valid:
   batch_size: 64
 
 test:
   batch_size: 64
-
+  
 classweights: True

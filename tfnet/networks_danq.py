@@ -30,61 +30,38 @@ class Network(nn.Module):
 
 
 class Danq(Network):
-    def __init__(self, *, emb_size, conv_num, conv_size, conv_off, linear_size, full_size, dropouts, **kwargs):
+    def __init__(self, *, emb_size, linear_size, full_size, dropouts, **kwargs):
         super(Danq, self).__init__(**kwargs)
 
         in_channels = [int(emb_size)] + linear_size  # depend on embedding
         
-        self.conv = nn.ModuleList([nn.Conv1d(in_channel,out_channel,26,1) for in_channel,out_channel in zip(in_channels[:-1],in_channels[1:])])
-        self.conv_bn = nn.ModuleList([nn.BatchNorm1d(out_channel) for out_channel in in_channels[1:]])          
+        self.conv = nn.Conv1d(in_channels[0], in_channels[-1], 26, 1)
 
-        #self.rnn = nn.LSTM(in_channels[-1], in_channels[-1], num_layers=2, batch_first=True, bidirectional=True, dropout=0.2)
-        self.rnn = nn.LSTM(in_channels[-1], in_channels[-1], num_layers=2, batch_first=True, bidirectional=True, dropout=0.2)
+        self.rnn = nn.LSTM(in_channels[-1], in_channels[-1], num_layers=2, batch_first=True, bidirectional=True, dropout=0.5)
 
         full_size = full_size + [len(all_tfs)]
         self.full_connect = nn.ModuleList([nn.Linear(in_s, out_s) for in_s, out_s in zip(full_size[:-1], full_size[1:])])
-        self.full_connect_bn = nn.ModuleList([nn.BatchNorm1d(out_s) for out_s in full_size[1:]] )
         
         self.dropout = nn.ModuleList([nn.Dropout(dropout) for dropout in dropouts])
-
-        self.reset_parameters()
 
     def forward(self, DNA_x, tf_x, **kwargs):
         DNA_x = super(Danq, self).forward(DNA_x, tf_x)
 
         conv_out = torch.transpose(DNA_x,1,2)
 
-        # ---------------- conv  ----------------#
-        for index, (conv, conv_bn) in enumerate(zip(self.conv, self.conv_bn)):
-            conv_out = F.relu(conv_bn(conv(conv_out)))
-            conv_out = F.max_pool2d(conv_out,(1,13),(1,13))
-            conv_out = self.dropout[0](conv_out)
-
+        # ---------------- conv activate maxpool dropout ----------------#
+        temp = self.dropout[0](F.max_pool1d(F.relu(self.conv(conv_out)), 13, 13))
 
         # ---------------------- bilstm ---------------------- #
-        conv_out = torch.transpose(conv_out,1,2)
-        conv_out, (h_n,h_c) = self.rnn(conv_out)
-
+        temp = torch.transpose(temp, 1, 2)
+        temp, (h_n,h_c) = self.rnn(temp)
 
         # ---------------- flatten and full connect ----------------#
-        conv_out = torch.flatten(conv_out, start_dim = 1)
+        temp = torch.flatten(temp, start_dim = 1)
 
-        for index, (full, full_bn) in enumerate(zip(self.full_connect, self.full_connect_bn)):
-            #conv_out = F.relu(full_bn(full(conv_out)))
-            conv_out = full(conv_out)
+        for index, full in enumerate(self.full_connect):
+            temp = full(temp)
             if index != len(self.full_connect)-1:
-                conv_out = F.relu(conv_out)
-        return conv_out
+                temp = F.relu(temp)
+        return temp
     
-
-    def reset_parameters(self):
-        for conv, conv_bn in zip(self.conv, self.conv_bn):
-            conv.reset_parameters()
-            conv_bn.reset_parameters()
-            nn.init.normal_(conv_bn.weight.data, mean=1.0, std=0.002)
-        for full_connect, full_connect_bn in zip(self.full_connect, self.full_connect_bn):
-            nn.init.trunc_normal_(full_connect.weight, std=0.02)
-            #nn.init.kaiming_normal_(full_connect.weight)
-            nn.init.zeros_(full_connect.bias)
-            full_connect_bn.reset_parameters()
-            nn.init.normal_(full_connect_bn.weight.data, mean=1.0, std=0.002)

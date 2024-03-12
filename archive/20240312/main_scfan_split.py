@@ -21,7 +21,7 @@ from logzero import logger
 from tfnet.data_utils import *
 from tfnet.datasets import TFBindDataset
 from tfnet.models_split import Model
-from tfnet.networks_simplecnn_2d import SimpleCNN_2d
+from tfnet.networks_scfan import scFAN
 from tfnet.evaluation import output_eval, output_predict, CUTOFF
 from tfnet.all_tfs import all_tfs
 
@@ -55,7 +55,7 @@ def generate_cv_id(length, num_groups=5):
 def get_binding_core(data_list, model_cnf, model_path, start_id, num_models, core_len=9):
     scores_list = []
     for model_id in range(start_id, start_id + num_models):
-        model = Model(SimpleCNN_2d, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False,
+        model = Model(scFAN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False,
                       **model_cnf['model'])
         scores_list.append(test(model, model_cnf, data_list))
     return (scores:=np.mean(scores_list, axis=0)).argmax(-1), scores
@@ -93,7 +93,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         valid_data = get_data_fn(data_cnf['valid']) if 'valid' in data_cnf else None
         for model_id in range(start_id, start_id + num_models):
             if not model_path.with_stem(f'{model_path.stem}-{model_id}').exists():
-                model = Model(SimpleCNN_2d, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict_list = class_weights_dict_list,
+                model = Model(scFAN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict_list = class_weights_dict_list,
                             **model_cnf['model'])
                 train(model, get_data_fn, data_cnf, model_cnf, valid_data=valid_data, class_weights_dict_list = class_weights_dict_list)
             else:
@@ -104,7 +104,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         DNA_seqs, atac_signal, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
-            model = Model(SimpleCNN_2d, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict_list = class_weights_dict_list,
+            model = Model(scFAN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict_list = class_weights_dict_list,
                           **model_cnf['model'])
             scores_lists.append(test(model, model_cnf, test_data=test_data))
         output_eval(DNA_seqs, targets_lists, np.mean(scores_lists, axis=0), res_path)
@@ -114,7 +114,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         DNA_seqs, atac_signal, targets_lists = [x[0] for x in predict_data], [x[1] for x in predict_data], [x[2] for x in predict_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
-            model = Model(SimpleCNN_2d, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict_list = class_weights_dict_list,
+            model = Model(scFAN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict_list = class_weights_dict_list,
                           **model_cnf['model'])
             scores_lists.append(test(model, model_cnf, test_data=predict_data))
         output_predict(DNA_seqs, targets_lists, np.mean(scores_lists, axis=0), res_path)
@@ -132,7 +132,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
             for cv_ in range(5):
                 
                 train_data, test_data = data[cv_id != cv_], data[cv_id == cv_]
-                model = Model(SimpleCNN_2d, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
+                model = Model(scFAN, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
                               **model_cnf['model'])
                 if not continue_train or not model.model_path.exists():
                     train(model, data_cnf, model_cnf, train_data=train_data, class_weights_dict = class_weights_dict)
@@ -142,7 +142,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 #pdb.set_trace()
 
                 #output_res(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], np.mean(scores_[cv_id == cv_], axis=0),
-                output_res(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_],          
+                output_eval(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_],          
                        res_path.with_name(f'{res_path.stem}-5CV'))
 
 
@@ -158,7 +158,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 test_data, test_cv_id = data[group_names == name_], cv_id[group_names == name_]
                 if len(test_data) > 30 and len([x[-1] for x in test_data if x[-1] >= CUTOFF]) >= 3:
                     for cv_ in range(5):
-                        model = Model(SimpleCNN_2d,
+                        model = Model(scFAN,
                                       model_path=model_path.with_stem(F'{model_path.stem}-{name_}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
                                       **model_cnf['model'])
                         if not model.model_path.exists() or not continue_train:
@@ -168,38 +168,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                         truth_ += [x[-1] for x in test_data_]
                         scores_ += test(model, model_cnf, test_data_).tolist()
             scores_list.append(scores_)
-            output_res(group_names_, truth_, np.mean(scores_list, axis=0), res_path.with_name(f'{res_path.stem}-LOMO'))
-
-
-        '''
-    elif mode == 'binding':
-        model_cnf['padding'] = model_cnf['binding']
-        data_list = get_binding_data(data_cnf['binding'], mhc_name_seq, model_cnf['model']['peptide_pad'])
-        (core_pos, scores), correct = get_binding_core(data_list, model_cnf, model_path, start_id, num_models), 0
-        for d, core_pos_, scores_ in zip(data_list, core_pos, scores):
-            (pdb, mhc_name, core), peptide_seq = d[0], d[1]
-            core_ = peptide_seq[core_pos_: core_pos_ + 9]
-            print(pdb, mhc_name, peptide_seq, core, core_, core == core_)
-            if core != core_:
-                for i, s in enumerate(scores_[:len(peptide_seq) - len(core) + 1]):
-                    print(peptide_seq[i: i + len(core)], s)
-            correct += core_ == core
-        logger.info(f'The number of correct prediction is {correct}.')
-        '''
-
-    elif mode == 'seq2logo':
-        assert allele in mhc_name_seq
-        data_list = get_seq2logo_data(data_cnf['seq2logo'], allele, mhc_name_seq[allele])
-        scores_list = []
-        for model_id in range(start_id, start_id + num_models):
-            model = Model(SimpleCNN_2d, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False, class_weights_dict = class_weights_dict,
-                          **model_cnf['model'])
-            scores_list.append(test(model, model_cnf, data_list))
-        scores = np.mean(scores_list, axis=0)
-        s_, p_ = scores.max(axis=1), scores.argmax(axis=1)
-        with open(res_path.with_name(f'{res_path.stem}-seq2logo-{allele}.txt'), 'w') as fp:
-            for k in (-s_).argsort()[:int(0.01 * len(s_))]:
-                print(data_list[k][1][p_[k]: p_[k] + 9], file=fp)
+            output_eval(group_names_, truth_, np.mean(scores_list, axis=0), res_path.with_name(f'{res_path.stem}-LOMO'))
 
 
 if __name__ == '__main__':
