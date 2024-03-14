@@ -22,7 +22,7 @@ from logzero import logger
 from tfnet.data_utils import *
 from tfnet.datasets import TFBindDataset
 from tfnet.models_epoch import Model
-from tfnet.networks_TBiNet import TBiNet
+from tfnet.networks_tbinet import TBiNet
 from tfnet.evaluation import output_eval, output_predict, CUTOFF
 from tfnet.all_tfs import all_tfs
 

@@ -16,7 +16,6 @@ import torch
 from torch.utils.data.dataset import Dataset
 from tqdm import tqdm
 from tfnet.data_utils import ACIDS
-from tfnet.all_tfs import all_tfs
 import re
 import pysam
 import pyBigWig

@@ -21,7 +21,6 @@ from tqdm import tqdm
 from logzero import logger
 from typing import Optional, Mapping, Tuple
 from tfnet.evaluation import get_mean_auc, get_mean_f1, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_recall, get_mean_aupr
-from tfnet.all_tfs import all_tfs
 import matplotlib.pyplot as plt
 import pdb
 import warnings 
