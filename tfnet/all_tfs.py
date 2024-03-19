@@ -95,15 +95,15 @@ shared_tfs = [
 no_dbd = ['CCNT2', 'P300', 'RAD21', 'SMC3']
 
 
-shared_tfs_dbd = [
-#all_tfs = [
+#shared_tfs_dbd = [
+all_tfs = [
     'CEBPB', 'CTCF', 'EGR1', 'JUND', 'MAX', 
     'MYC', 'NRF1', 'REST', 'RFX5', 'SIX5', 
     'SP1', 'SRF', 'USF2', 'YY1', 'ZNF143']
 
 
-all_tfs = [
-#grch38_encode_A549 = [
+#all_tfs = [
+grch38_encode_A549 = [
     "ATOH8","BCL3","BHLHE40","CBX2","CEBPB","CTCF","E2F6","EHF","ELK1","EP300","ESRRA","FOSL2","FOXF2","FOXS1","GATA3","HES2","HEYL","HMGA2","HMGXB4","HOXA7","HOXB13","HOXB5","JUN","MAFK","MAX","MAZ","MYC","NFE2L2","NR2E3","NR3C1","NR5A2","PBX1","PBX3","PRDM1","RARB","RCOR1","REST","RFX5","RNF2","SREBF1","SREBF2","TEAD4","TP53","TP63","USF2","ZNF302","ZNF624","ZSCAN20"]
 
 grch38_encode_GM12878 = [

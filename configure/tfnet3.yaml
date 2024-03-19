@@ -1,11 +1,11 @@
-name: TFNet
+name: TFNet3
 path: models
 
 model:
   emb_size: 8 # depending on number of bw       # for simplecnn_2d
-  linear_size: [160, 240, 480] # kernel size 26 and maxpool size 13 result in 320 feature len
+  linear_size: [64, 128, 256] # kernel size 26 and maxpool size 13 result in 320 feature len
   #linear_size: [160, 240, 480] # kernel size 8 and maxpool size 4 result in 54 feature len
-  full_size: [51840 ,1024] # for deepsea
+  full_size: [72960 ,1024] # for deepsea
   #full_size:[51840, 1024]
   dropouts: [0.2, 0.5]
   DNA_pad: 10
