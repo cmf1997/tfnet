@@ -76,7 +76,7 @@ def get_data_lazy(data_file, tf_name_seq, genome_fasta_file, DNA_N = True):
     for tf_name in all_tfs:
          all_tfs_seq.append(tf_name_seq[tf_name])
 
-    #genome_fasta = pysam.Fastafile(genome_fasta_file)
+    genome_fasta = pysam.Fastafile(genome_fasta_file)
     with gzip.open(data_file, 'rt') as fp:
         for line in fp:
             # ---------------------- process multiple bigwig file ---------------------- #
@@ -99,10 +99,15 @@ def get_data_lazy(data_file, tf_name_seq, genome_fasta_file, DNA_N = True):
                     data_list.append((chr, start, stop, bind_list, all_tfs_seq))
             '''
             # ---------------------- despite n ---------------------- #
+            DNA_seq = genome_fasta.fetch(chr, start, stop)
+            if len(DNA_seq) != len(re.findall('[atcg]', DNA_seq.lower())):
+                continue
+
+            # ---------------- append data ---------------------- #
             data_list.append((chr, start, stop, bind_list, all_tfs_seq))
 
 
-    #genome_fasta.close()
+    genome_fasta.close()
     logger.info(f'number of data_list: {len(data_list)}')
     return data_list
 
