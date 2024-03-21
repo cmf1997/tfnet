@@ -15,7 +15,7 @@ import torch
 
 from torch.utils.data.dataset import Dataset
 from tfnet.data_utils import ACIDS
-from tfnet.generate_dnashape import seq_to_shape
+from tfnet.generate_dnashape import seq_to_shape14, seq_to_shape5
 import re
 import pysam
 import pyBigWig
@@ -77,7 +77,8 @@ class TFBindDataset(Dataset):
         DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
         
         # ---------------------- DNA shape info ---------------------- #
-        DNA_shape_unpad = torch.tensor(seq_to_shape(DNA_seq, self.dnashape), dtype=torch.float32)
+        #DNA_shape_unpad = torch.tensor(seq_to_shape14(DNA_seq, self.dnashape), dtype=torch.float32)
+        DNA_shape_unpad = torch.tensor(seq_to_shape5(DNA_seq, self.dnashape), dtype=torch.float32)
         #zero_padding = torch.zeros(2, 14) # for dnashape14
         zero_padding = torch.zeros(2, 5) # for dnashape5
         DNA_shape = torch.cat([zero_padding, DNA_shape_unpad, zero_padding], dim=0)
