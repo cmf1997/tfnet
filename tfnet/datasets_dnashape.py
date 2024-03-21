@@ -19,6 +19,7 @@ from tfnet.generate_dnashape import seq_to_shape
 import re
 import pysam
 import pyBigWig
+import pandas as pd
 import pdb
 
 
@@ -41,6 +42,11 @@ class TFBindDataset(Dataset):
         self.tf_len = tf_len
         self.bind_list = [ i[-2] for i in data_list]
         self.bind_list = np.asarray(self.bind_list, dtype=np.float32)
+
+        #self.dnashape = pd.read_csv("./dnashape14.2.csv", header=0, index_col=0) # for dnashape14
+        self.dnashape = pd.read_csv("./dnashape5.2.csv", header=0, index_col=0) # for dnashape5
+        #if normalize:
+        #    self.dnashape = self.dnashape.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
 
     def __getitem__(self, idx):
         chr, start, stop, bind_list, all_tfs_seq = self.data_list[idx]
@@ -71,8 +77,9 @@ class TFBindDataset(Dataset):
         DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
         
         # ---------------------- DNA shape info ---------------------- #
-        DNA_shape_unpad = torch.tensor(seq_to_shape(DNA_seq, normalize=True), dtype=torch.float32)
-        zero_padding = torch.zeros(2, 14)
+        DNA_shape_unpad = torch.tensor(seq_to_shape(DNA_seq, self.dnashape), dtype=torch.float32)
+        #zero_padding = torch.zeros(2, 14) # for dnashape14
+        zero_padding = torch.zeros(2, 5) # for dnashape5
         DNA_shape = torch.cat([zero_padding, DNA_shape_unpad, zero_padding], dim=0)
         DNA_x = torch.cat([DNA_x, DNA_shape],dim=1)
         

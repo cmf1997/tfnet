@@ -1,8 +1,23 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+
+'''
+@File : generate_dnashape.py
+@Time : 2024/03/21 12:59:16
+@Author : Cmf
+@Version : 1.0
+@Desc : modified from https://github.com/wenkaiyan-kevin/PlantBind/blob/main/src/translate.py
+'''
+
+# here put the import lib
 import pandas as pd
 from sklearn import preprocessing
 import numpy as np
 import pdb
 
+
+# code
+'''
 dict_with_shapes = {
     "index": [
         "AAAAA",
@@ -17441,6 +17456,32 @@ query_table_original = pd.DataFrame(
     index=dict_with_shapes["index"],
 )
 
+
+def normalize_query_table():
+
+    query = query_table_original.copy()
+
+    # extract both values for inter shapes
+    for shape_ in inter_shapes:
+        query[shape_ + "1"] = query[shape_].apply(lambda cell_entry: round(cell_entry[0],5))
+        query[shape_ + "2"] = query[shape_].apply(lambda cell_entry: round(cell_entry[1],5))
+        query = query.drop(shape_, axis="columns")
+
+    # normalize to values between 0 and 1
+    shapes_numpy = query.values
+    min_max_scaler = preprocessing.MinMaxScaler()
+    shapes_scaled = min_max_scaler.fit_transform(shapes_numpy)
+    query = pd.DataFrame(shapes_scaled, columns=query.columns, index=query.index).round(5)
+
+    # zip values back together to tuples
+    for shape_ in inter_shapes:
+        query[shape_] = list(zip(query[shape_ + "1"], query[shape_ + "2"]))
+        query = query.drop(shape_ + "1", axis="columns")
+        query = query.drop(shape_ + "2", axis="columns")
+
+    return query[query_table_original.columns]
+'''
+
 inter_shapes = ["Roll", "HelT", "Tilt", "Rise", "Shift", "Slide"]
 
 
@@ -17454,41 +17495,11 @@ def calculate_intershape(row, inter_shape):
             return None
 
 
-def normalize_query_table():
-
-    query = query_table_original.copy()
-
-    # extract both values for inter shapes
-    for shape_ in inter_shapes:
-        query[shape_ + "1"] = query[shape_].apply(lambda cell_entry: cell_entry[0])
-        query[shape_ + "2"] = query[shape_].apply(lambda cell_entry: cell_entry[1])
-        query = query.drop(shape_, axis="columns")
-
-    # normalize to values between 0 and 1
-    shapes_numpy = query.values
-    min_max_scaler = preprocessing.MinMaxScaler()
-    shapes_scaled = min_max_scaler.fit_transform(shapes_numpy)
-    query = pd.DataFrame(shapes_scaled, columns=query.columns, index=query.index)
-
-    # zip values back together to tuples
-    for shape_ in inter_shapes:
-        query[shape_] = list(zip(query[shape_ + "1"], query[shape_ + "2"]))
-        query = query.drop(shape_ + "1", axis="columns")
-        query = query.drop(shape_ + "2", axis="columns")
-
-    return query[query_table_original.columns]
-
-
-def seq_to_shape(seq, normalize=False):
+def seq_to_shape(seq, query_table):
 
     seq = seq.upper()
 
     assert len(seq) > 4, "Sequence too short (has to be at least 5 bases)"
-
-    if normalize:
-        query_table = normalize_query_table()
-    else:
-        query_table = query_table_original.copy()
 
     # generate empty dictionary to save shape value for each position
     shape_position_value = {}
@@ -17528,13 +17539,13 @@ def seq_to_shape(seq, normalize=False):
     translation = np.array(translation.drop([1, 2, len(seq), len(seq)-1]))
     
     #---------------- solved by discard seq contain N by data_utils of get data lazy ---------------------- #
+    '''
     try:
         translation[np.isnan(translation)] = 0
     except TypeError as e:
         #pdb.set_trace()
-        print("TypeError due to seq consist of all NNNN")
+        print("TypeError due to seq consist of all NNNN")    
+    '''
 
     translation[np.isnan(translation)] = 0
-
-
     return translation
