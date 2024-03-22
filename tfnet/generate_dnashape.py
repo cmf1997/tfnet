@@ -17537,7 +17537,7 @@ def seq_to_shape14(seq, query_table):
         translation = translation.drop(columns=shape_name + "_next")
     
     
-    translation = np.array(translation.drop([1, 2, len(seq), len(seq)-1]))
+    translation = np.array(translation.drop([1, 2, len(seq), len(seq)-1]),dtype="float32")
     
     #---------------- solved by discard seq contain N by data_utils of get data lazy ---------------------- #
     '''
@@ -17547,6 +17547,7 @@ def seq_to_shape14(seq, query_table):
         #pdb.set_trace()
         print("TypeError due to seq consist of all NNNN")    
     '''
+    #pdb.set_trace()
 
     translation[np.isnan(translation)] = 0
     return translation
@@ -17601,3 +17602,38 @@ def seq_to_shape5(seq, dnashape5):
 
     translation[np.isnan(translation)] = 0
     return translation
+
+
+def seq_to_shape5_dict(seq, dnashape5_dict):
+    seq = seq.upper()
+    assert len(seq) > 4, "Sequence too short (has to be at least 5 bases)"
+    shape_position_value = []
+    for index in range(0, len(seq)):
+        current_pentamer = seq[index - 2 : index + 3]
+        if (len(current_pentamer) < 5) or not all(
+                base in "ACGT" for base in current_pentamer
+                ):
+            continue 
+        else:
+            shape_position_value.append(dnashape5_dict[current_pentamer])
+    shape_position_value = np.array(shape_position_value)
+    shape_position_value[np.isnan(shape_position_value)] = 0
+    return shape_position_value
+
+
+
+def seq_to_shape14_dict(seq, dnashape14_dict):
+    seq = seq.upper()
+    assert len(seq) > 4, "Sequence too short (has to be at least 5 bases)"
+    shape_position_value = []
+    for index in range(0, len(seq)):
+        current_pentamer = seq[index - 2 : index + 3]
+        if (len(current_pentamer) < 5) or not all(
+                base in "ACGT" for base in current_pentamer
+                ):
+            continue 
+        else:
+            shape_position_value.append(dnashape14_dict[current_pentamer])
+    shape_position_value = np.array(shape_position_value)
+    shape_position_value[np.isnan(shape_position_value)] = 0
+    return shape_position_value
