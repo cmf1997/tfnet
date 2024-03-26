@@ -15,7 +15,7 @@ import torch
 
 from torch.utils.data.dataset import Dataset
 from tfnet.data_utils import ACIDS
-from tfnet.generate_dnashape import seq_to_shape5_dict, seq_to_shape14_dict
+from tfnet.generate_dnashape import seq_to_shape_dict
 import re
 import pysam
 import pyBigWig
@@ -48,7 +48,6 @@ class TFBindDataset(Dataset):
         #if normalize:
         #    self.dnashape = self.dnashape.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)))
         self.dnashape_dict =self.dnashape.apply(lambda x: x.dropna().tolist(), axis=1).to_dict()
-        #self.dnashape_dict =self.dnashape.apply(lambda x: x.dropna().tolist(), axis=1).to_dict()
 
 
     def __getitem__(self, idx):
@@ -83,8 +82,7 @@ class TFBindDataset(Dataset):
         DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
         
         # ---------------------- DNA shape info ---------------------- #
-        DNA_shape_unpad = torch.tensor(seq_to_shape5_dict(DNA_seq, self.dnashape_dict), dtype=torch.float32) # much faster than seq_to_shape5
-        #DNA_shape_unpad = torch.tensor(seq_to_shape14_dict(DNA_seq, self.dnashape), dtype=torch.float32)
+        DNA_shape_unpad = torch.tensor(seq_to_shape_dict(DNA_seq, self.dnashape_dict), dtype=torch.float32) # much faster than seq_to_shape5
         zero_padding = torch.zeros(2, 5) # for dnashape5
         #zero_padding = torch.zeros(2, 14) # for dnashape14
         DNA_shape = torch.cat([zero_padding, DNA_shape_unpad, zero_padding], dim=0)
