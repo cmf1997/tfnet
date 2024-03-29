@@ -6,24 +6,15 @@
 
 ## Workflow
 
-![tf-dl](img/tf-dl.png)
-
-
-### TF pseudosequence generation
-
-```
-# align all DBD sequences by mafft
-# calculate the metrics
-```
-all DBD sequences were collected from [cis-bp](http://cisbp.ccbr.utoronto.ca)
-
+![tf-dl](img/TFNet.pnd)
+![analysis](img/analysis.png)
 
 ### Genomic sequence data
 
 ```
-# Genome size of each chromosome, may need to filter some chrom in the hg19.chrom.sizes.reduced
+# Genome size of each chromosome, may need to filter some chrom in the hg38.chrom.sizes.reduced
 samtools faidx data/genome/genome.fa
-cut -f 1,2 data/genome/genome.fa.fai > data/hg19.chrom.sizes.reduced
+cut -f 1,2 data/genome/genome.fa.fai > data/hg38.chrom.sizes.reduced
 ```
 Genomic sequence is provided as fasta format. You can download these files from [here](https://hgdownload.soe.ucsc.edu/downloads.html)
 blacklist can be downloaded from [here](https://github.com/Boyle-Lab/Blacklist/blob/master/lists/)
@@ -49,16 +40,14 @@ ls data/tf_chip/*bed.gz | awk -F '\_|\.' '{OFS="\t"}{print $0,$2}' > data/tf_chi
 python preprocess_data.py -d configure/data.yaml -m configure/tfnet.yaml
 ```
 
-### adjust model config file to set classweights
+### adjust model config file to select Model structure and set classweights
 
 ### for TFNet Training and Testing
 
 ```
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode train -n 5
-
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode eval -n 5 # evaluate on test set
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode predict -n 5 # predict on independent data set
-
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode 5cv # 5 cross-validation
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode lomo # leave one data out cross-validation
 
@@ -69,18 +58,5 @@ python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode lomo # leav
 gunzip -c data_train.txt.gz | shuf | split -l 400000 -d -a 2
 split -l n -d -a 2 data_train.txt data_train_mini_ # where n is the number of lines in each file, 230000 
 # train
-python main_simplecnn_2d_split.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
-```
-
-
-### for Baseline Model Testing
-
-```
-python main_simplecnn.py -d configure/data.yaml -m configure/simplecnn.yaml --mode train -n 5
-
-python main_simplecnn_2d.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
-python main_simplecnn_2d_epoch.py -d configure/data.yaml -m configure/simplecnn_2d.yaml --mode train -n 5
-
-python baseline_random.py configure/data.yaml
-python baseline_zero.py configure/data.yaml
+python main_split.py -d configure/data.yaml -m configure/***.yaml --mode train -n 5
 ```
