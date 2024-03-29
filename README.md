@@ -6,7 +6,7 @@
 
 ## Workflow
 
-![tf-dl](img/TFNet.pnd)
+![tf-dl](img/TFNet.png)
 ![analysis](img/analysis.png)
 
 ### Genomic sequence data
