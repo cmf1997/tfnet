@@ -12,7 +12,6 @@
 # here put the import lib
 import torch
 import torch.nn.functional as F
-from tfnet.all_tfs import all_tfs
 from torch import nn
 import math
 import pdb
@@ -88,10 +87,8 @@ class MultiHeadAttention(nn.Module):
         return self.dense(context), score
         
 
-
 class DeepATT(Network):
-    #def __init__(self, *, sequence_length, n_targets):
-    def __init__(self, *, emb_size, linear_size, full_size, dropouts, **kwargs):
+    def __init__(self, *, emb_size, linear_size, full_size, dropouts, all_tfs, **kwargs):
         super(DeepATT, self).__init__(**kwargs)
 
         in_channels = [int(emb_size)] + linear_size
@@ -108,10 +105,9 @@ class DeepATT(Network):
 
         self.dropout = nn.ModuleList([nn.Dropout(dropout) for dropout in dropouts])
 
-        self.reset_parameters()
+        self.all_tfs = all_tfs
 
-    #def forward(self, DNA_x):
-    def forward(self, DNA_x, tf_x, **kwargs):
+    def forward(self, DNA_x, **kwargs):
 
         DNA_x = torch.transpose(DNA_x,1,2)
 
@@ -134,10 +130,4 @@ class DeepATT(Network):
         for index, full in enumerate(self.full_connect):
             temp = full(temp)
 
-        return temp.reshape([-1, len(all_tfs)])
-        
-    def reset_parameters(self):
-        self.conv.reset_parameters()
-        for full_connect in self.full_connect:
-            nn.init.trunc_normal_(full_connect.weight, std=0.02)
-            nn.init.zeros_(full_connect.bias)
+        return temp.reshape([-1, len(self.all_tfs)])

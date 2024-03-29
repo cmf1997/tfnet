@@ -15,22 +15,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pdb
 
-from tfnet.all_tfs import all_tfs
-
 __all__ = ['Danq']
 
 # code
 class Network(nn.Module):
-    def __init__(self, *, padding_idx=0, DNA_pad=10, tf_len=39, **kwargs):
+    def __init__(self, **kwargs):
         super(Network, self).__init__()
-        self.DNA_pad, self.padding_idx, self.tf_len = DNA_pad, padding_idx, tf_len
 
-    def forward(self, DNA_x, tf_x, *args, **kwargs):
+    def forward(self, DNA_x, **kwargs):
         return DNA_x
 
-
 class Danq(Network):
-    def __init__(self, *, emb_size, linear_size, full_size, dropouts, **kwargs):
+    def __init__(self, *, emb_size, linear_size, full_size, dropouts, all_tfs, **kwargs):
         super(Danq, self).__init__(**kwargs)
 
         in_channels = [int(emb_size)] + linear_size  # depend on embedding
@@ -39,13 +35,13 @@ class Danq(Network):
 
         self.rnn = nn.LSTM(in_channels[-1], in_channels[-1], num_layers=2, batch_first=True, bidirectional=True, dropout=0.5)
 
+        self.all_tfs = all_tfs
         full_size = full_size + [len(all_tfs)]
         self.full_connect = nn.ModuleList([nn.Linear(in_s, out_s) for in_s, out_s in zip(full_size[:-1], full_size[1:])])
         
         self.dropout = nn.ModuleList([nn.Dropout(dropout) for dropout in dropouts])
 
-    def forward(self, DNA_x, tf_x, **kwargs):
-        DNA_x = super(Danq, self).forward(DNA_x, tf_x)
+    def forward(self, DNA_x, **kwargs):
 
         conv_out = torch.transpose(DNA_x,1,2)
 

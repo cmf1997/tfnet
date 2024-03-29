@@ -13,7 +13,6 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-from tfnet.all_tfs import all_tfs
 import pdb
 import os
 
@@ -34,7 +33,7 @@ class Network(nn.Module):
 
 
 class TFNet2(Network):
-    def __init__(self, *, emb_size, linear_size, full_size, dropouts, **kwargs):
+    def __init__(self, *, emb_size, linear_size, full_size, dropouts, all_tfs, **kwargs):
         super(TFNet2, self).__init__(**kwargs)
 
         in_channels = [int(emb_size)] + linear_size
@@ -54,7 +53,9 @@ class TFNet2(Network):
 
         self.dropout = nn.ModuleList([nn.Dropout(dropout) for dropout in dropouts])
 
-    def forward(self, DNA_x, tf_x, **kwargs):
+        self.all_tfs = all_tfs
+
+    def forward(self, DNA_x, **kwargs):
 
         temp = torch.transpose(DNA_x,1,2)
 

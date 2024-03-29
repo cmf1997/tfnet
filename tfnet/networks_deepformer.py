@@ -12,7 +12,6 @@
 # here put the import lib
 import torch
 import torch.nn.functional as F
-from tfnet.all_tfs import all_tfs
 from torch import nn, einsum
 import pdb
 import os
@@ -30,7 +29,6 @@ class Network(nn.Module):
 
     def forward(self, DNA_x, **kwargs):
         return DNA_x
-    
 
 class Flow_Attention(nn.Module):
     def __init__(self, d_input, d_model, d_output, n_heads, drop_out=0.05, eps=5e-4):
@@ -86,12 +84,10 @@ class Flow_Attention(nn.Module):
         x = self.out_projection(x)
         x = self.dropout(x)
         return x
-        
 
 
 class DeepFormer(Network):
-    #def __init__(self, *, sequence_length, n_targets):
-    def __init__(self, *, emb_size, linear_size, full_size, dropouts, **kwargs):
+    def __init__(self, *, emb_size, linear_size, full_size, dropouts, all_tfs, **kwargs):
         super(DeepFormer, self).__init__(**kwargs)
 
         in_channels = [int(emb_size)] + linear_size
@@ -106,10 +102,9 @@ class DeepFormer(Network):
 
         self.dropout = nn.ModuleList([nn.Dropout(dropout) for dropout in dropouts])
 
-        self.reset_parameters()
+        self.all_tfs = all_tfs
 
-    #def forward(self, DNA_x):
-    def forward(self, DNA_x, tf_x, **kwargs):
+    def forward(self, DNA_x, **kwargs):
 
         conv_out = torch.transpose(DNA_x,1,2)
 
@@ -135,12 +130,3 @@ class DeepFormer(Network):
                 linear_out = F.relu(linear_out)
 
         return linear_out
-        
-    def reset_parameters(self):
-        for conv, conv_bn in zip(self.conv, self.conv_bn):
-            conv.reset_parameters()
-            conv_bn.reset_parameters()
-            nn.init.normal_(conv_bn.weight.data, mean=1.0, std=0.002)
-        for full_connect in self.full_connect:
-            nn.init.trunc_normal_(full_connect.weight, std=0.02)
-            nn.init.zeros_(full_connect.bias)

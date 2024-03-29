@@ -19,9 +19,8 @@ from pathlib import Path
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from logzero import logger
-from typing import Optional, Mapping, Tuple
+from typing import Optional, Mapping
 from tfnet.evaluation import get_mean_auc, get_label_ranking_average_precision_score, get_mean_accuracy_score, get_mean_balanced_accuracy_score, get_mean_recall, get_mean_aupr, get_f1, get_mean_f1
-from tfnet.all_tfs import all_tfs
 from tfnet.datasets import TFBindDataset
 import matplotlib.pyplot as plt
 import pdb
@@ -69,8 +68,6 @@ class Model(object):
     """
     def __init__(self, network, model_path, class_weights_dict_list = None, **kwargs):
         self.model = self.network = network(**kwargs).to(mps_device)
-        # consider Cross Entropy as loss_fn
-        #self.loss_fn, self.model_path = nn.CrossEntropyLoss(), Path(model_path)
         if class_weights_dict_list:
             self.model_path =  Path(model_path)
         else:
@@ -85,7 +82,7 @@ class Model(object):
         self.early_stopper_2 = EarlyStopper(patience=8, min_delta=0.005)
 
     def get_scores(self, inputs, **kwargs):
-        return self.model(*(x.to(mps_device) for x in inputs), **kwargs)
+        return self.model(inputs.to(mps_device), **kwargs)
 
     def cal_loss(self, scores, targets, class_weights_dict):
         if class_weights_dict:
@@ -101,7 +98,7 @@ class Model(object):
             
         return loss
 
-    def train_step(self, inputs: Tuple[torch.Tensor, torch.Tensor], targets: torch.Tensor, class_weights_dict= None, **kwargs):
+    def train_step(self, inputs: torch.Tensor, targets: torch.Tensor, class_weights_dict= None, **kwargs):
         self.optimizer.zero_grad()
         self.model.train()
         loss = self.cal_loss(self.get_scores(inputs, **kwargs), targets, class_weights_dict)
@@ -110,7 +107,7 @@ class Model(object):
         return loss.item()
 
     @torch.no_grad()
-    def predict_step(self, inputs: Tuple[torch.Tensor, torch.Tensor], **kwargs):
+    def predict_step(self, inputs: torch.Tensor, **kwargs):
         self.model.eval()
         return self.get_scores(inputs, **kwargs).to(mps_device)
 

@@ -22,9 +22,8 @@ from logzero import logger
 from tfnet.data_utils import *
 from tfnet.datasets import TFBindDataset
 from tfnet.models_epoch import Model
-from tfnet.networks_tfnet3 import TFNet3
+from tfnet.networks_tfnet2 import TFNet2
 from tfnet.evaluation import output_eval, output_predict, CUTOFF
-from tfnet.all_tfs import all_tfs
 
 import pdb
 
@@ -59,7 +58,7 @@ def generate_cv_id(length, num_groups=5):
 def get_binding_core(data_list, model_cnf, model_path, start_id, num_models, core_len=9):
     scores_list = []
     for model_id in range(start_id, start_id + num_models):
-        model = Model(TFNet3, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False,
+        model = Model(TFNet2, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False,
                       **model_cnf['model'])
         scores_list.append(test(model, model_cnf, data_list))
     return (scores:=np.mean(scores_list, axis=0)).argmax(-1), scores
@@ -82,8 +81,8 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     res_path = Path(data_cnf['results'])/f'{model_name}'
     Path(data_cnf['results']).mkdir(parents=True, exist_ok=True)
     model_cnf.setdefault('ensemble', 20)
-    tf_name_seq = get_tf_name_seq(data_cnf['tf_seq'])
-    get_data_fn = partial(get_data_lazy, tf_name_seq=tf_name_seq, genome_fasta_file= data_cnf['genome_fasta_file'], DNA_N = model_cnf['padding']['DNA_N'])
+    get_data_fn = partial(get_data_lazy, genome_fasta_file= data_cnf['genome_fasta_file'], DNA_N = model_cnf['padding']['DNA_N'])
+    all_tfs = model_cnf['model']['all_tfs']
 
     classweights = model_cnf['classweights']
 
@@ -97,7 +96,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
         valid_data = get_data_fn(data_cnf['valid']) if train_data is not None and 'valid' in data_cnf else None
         for model_id in range(start_id, start_id + num_models):
-            model = Model(TFNet3, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+            model = Model(TFNet2, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             if not continue_train or not model.model_path.exists():
                 train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
@@ -107,23 +106,23 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
         
         #chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] + shift for x in test_data], [x[2] - shift for x in test_data], [x[-2] for x in test_data] # depend on the input data len
-        chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data], [x[-2] for x in test_data]
+        chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data], [x[-1] for x in test_data]
 
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
-            model = Model(TFNet3, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+            model = Model(TFNet2, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             scores_lists.append(test(model, data_cnf, model_cnf, test_data=test_data))
-        output_eval(chr, start, stop, np.array(targets_lists), np.mean(scores_lists, axis=0), res_path)
+        output_eval(chr, start, stop, np.array(targets_lists), np.mean(scores_lists, axis=0), all_tfs, res_path)
     
     elif mode == 'predict':
         predict_data = get_data_fn(data_cnf['predict'])
         shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
 
-        chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-2] for x in predict_data]
+        chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-1] for x in predict_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
-            model = Model(TFNet3, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+            model = Model(TFNet2, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             scores_lists.append(test(model, data_cnf, model_cnf, test_data=predict_data))
         output_predict(chr, start, stop, np.mean(scores_lists, axis=0), res_path)
@@ -141,7 +140,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
             for cv_ in range(5):
                 
                 train_data, test_data = data[cv_id != cv_], data[cv_id == cv_]
-                model = Model(TFNet3, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
+                model = Model(TFNet2, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
                               **model_cnf['model'])
                 if not continue_train or not model.model_path.exists():
                     train(model, data_cnf, model_cnf, train_data=train_data, class_weights_dict = class_weights_dict)
@@ -151,7 +150,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 #pdb.set_trace()
 
                 #output_res(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], np.mean(scores_[cv_id == cv_], axis=0),
-                output_eval(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_],          
+                output_eval(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_], all_tfs,          
                        res_path.with_name(f'{res_path.stem}-5CV'))
 
 
@@ -167,7 +166,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 test_data, test_cv_id = data[group_names == name_], cv_id[group_names == name_]
                 if len(test_data) > 30 and len([x[-1] for x in test_data if x[-1] >= CUTOFF]) >= 3:
                     for cv_ in range(5):
-                        model = Model(TFNet3,
+                        model = Model(TFNet2,
                                       model_path=model_path.with_stem(F'{model_path.stem}-{name_}-{model_id}-CV{cv_}'), class_weights_dict = class_weights_dict,
                                       **model_cnf['model'])
                         if not model.model_path.exists() or not continue_train:
@@ -177,7 +176,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                         truth_ += [x[-1] for x in test_data_]
                         scores_ += test(model, model_cnf, test_data_).tolist()
             scores_list.append(scores_)
-            output_eval(group_names_, truth_, np.mean(scores_list, axis=0), res_path.with_name(f'{res_path.stem}-LOMO'))
+            output_eval(group_names_, truth_, np.mean(scores_list, axis=0), all_tfs, res_path.with_name(f'{res_path.stem}-LOMO'))
 
 
 if __name__ == '__main__':

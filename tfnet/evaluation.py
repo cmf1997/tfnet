@@ -25,7 +25,6 @@ from sklearn.metrics import label_ranking_average_precision_score
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import precision_recall_curve, average_precision_score, auc
-from tfnet.all_tfs import all_tfs
 from logzero import logger
 import pdb
 import warnings
@@ -151,7 +150,7 @@ def get_mean_balanced_accuracy_score(targets, scores, axis = 0, cutoff=CUTOFF):
     return np.mean(accuracy_score_list)
 
 
-def output_eval(chrs, starts, stops, targets_lists, scores_lists, output_path: Path):
+def output_eval(chrs, starts, stops, targets_lists, scores_lists, all_tfs, output_path: Path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
     eval_out_path = output_path.with_suffix('.eval.tsv')
 

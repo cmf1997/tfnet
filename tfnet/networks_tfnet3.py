@@ -13,7 +13,6 @@
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-from tfnet.all_tfs import all_tfs
 import pdb
 import os
 
@@ -70,7 +69,7 @@ class attention_tbinet(nn.Module):
     
 
 class TFNet3(Network):
-    def __init__(self, *, emb_size, linear_size, full_size, dropouts, **kwargs):
+    def __init__(self, *, emb_size, linear_size, full_size, dropouts, all_tfs, **kwargs):
         super(TFNet3, self).__init__(**kwargs)
 
         in_channels = [int(emb_size)] + linear_size
@@ -98,8 +97,9 @@ class TFNet3(Network):
                                         ))
 
         self.dropout = nn.ModuleList([nn.Dropout(dropout) for dropout in dropouts])
+        self.all_tfs = all_tfs
 
-    def forward(self, DNA_x, tf_x, **kwargs):
+    def forward(self, DNA_x, **kwargs):
 
         temp = torch.transpose(DNA_x,1,2)
         batch_size = temp.shape[0]
@@ -136,7 +136,7 @@ class TFNet3(Network):
                 temp = F.relu(temp)
         '''
         outs = []
-        for i in range(len(all_tfs)):
+        for i in range(len(self.all_tfs)):
             FClayer = getattr(self, "FC%d"%i)
             y = FClayer(temp[:,i,:])
             y = torch.squeeze(y, dim=-1)

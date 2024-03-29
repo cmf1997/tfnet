@@ -14,7 +14,6 @@ import numpy as np
 import torch
 
 from torch.utils.data.dataset import Dataset
-from tfnet.data_utils import ACIDS
 from tfnet.generate_dnashape import seq_to_shape_dict
 import re
 import pysam
@@ -40,7 +39,7 @@ class TFBindDataset(Dataset):
         self.DNA_pad = DNA_pad
         self.DNA_len = DNA_len
         self.tf_len = tf_len
-        self.bind_list = [ i[-2] for i in data_list]
+        self.bind_list = [ i[-1] for i in data_list]
         self.bind_list = np.asarray(self.bind_list, dtype=np.float32)
 
         #self.dnashape = pd.read_csv("./tfnet/dnashape14.2.csv", header=0, index_col=0) # for dnashape14
@@ -51,7 +50,7 @@ class TFBindDataset(Dataset):
 
 
     def __getitem__(self, idx):
-        chr, start, stop, bind_list, all_tfs_seq = self.data_list[idx]
+        chr, start, stop, bind_list = self.data_list[idx]
 
         bind_list = np.asarray(bind_list, dtype=np.float32)
         start = int(start)
@@ -110,13 +109,8 @@ class TFBindDataset(Dataset):
             bigwig_signal = torch.tensor(bigwig_signal, dtype=torch.float32)
 
             DNA_x = torch.cat([DNA_x, bigwig_signal],dim=1)
-            
-        tf_x = []
-        for tf_seq in all_tfs_seq:
-            tf_x.append([ACIDS.index(x if x in ACIDS else "-") for x in tf_seq])
-            assert len(tf_seq) == self.tf_len
-        tf_x = torch.tensor(tf_x, dtype=torch.long)
 
-        return (DNA_x, tf_x), bind_list
+        return DNA_x, bind_list
+    
     def __len__(self):
         return len(self.data_list)
