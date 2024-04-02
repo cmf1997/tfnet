@@ -20,21 +20,21 @@ from torch.utils.data.dataloader import DataLoader
 from logzero import logger
 
 from tfnet.data_utils import *
-from tfnet.datasets_dnashape import TFBindDataset
-from tfnet.models_dnashape_epoch import Model
+from tfnet.datasets import TFBindDataset
+from tfnet.models_epoch import Model
 from tfnet.evaluation import output_eval, output_predict, CUTOFF
 
 import pdb
 
 
 # code
-def train(model, data_cnf, model_cnf, train_data, valid_data=None, class_weights_dict = None, random_state=1240):
+def train(model, data_cnf, model_cnf, train_data, valid_data=None, random_state=1240):
     logger.info(f'Start training model {model.model_path}')
     if valid_data is None:
         train_data, valid_data = train_test_split(train_data, test_size=data_cnf.get('valid', 0.2),
                                                   random_state=random_state)
         
-    model.train(data_cnf, model_cnf, train_data, valid_data, class_weights_dict, **model_cnf['train']) # for samples_per_epoch
+    model.train(data_cnf, model_cnf, train_data, valid_data, **model_cnf['train']) # for samples_per_epoch
 
     logger.info(f'Finish training model {model.model_path}')
 
@@ -54,24 +54,14 @@ def generate_cv_id(length, num_groups=5):
     return labels
 
 
-def get_binding_core(data_list, model_cnf, model_path, start_id, num_models, core_len=9):
-    scores_list = []
-    for model_id in range(start_id, start_id + num_models):
-        model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False,
-                      **model_cnf['model'])
-        scores_list.append(test(model, model_cnf, data_list))
-    return (scores:=np.mean(scores_list, axis=0)).argmax(-1), scores
-
-
 @click.command()
 @click.option('-d', '--data-cnf', type=click.Path(exists=True))
 @click.option('-m', '--model-cnf', type=click.Path(exists=True))
 @click.option('--mode', type=click.Choice(('train', 'eval', 'predict','5cv', 'loo', 'lomo')), default=None)
 @click.option('-s', '--start-id', default=0)
 @click.option('-n', '--num_models', default=1)
-@click.option('-c', '--continue', 'continue_train', is_flag=True)
-@click.option('-a', '--allele', default=None)
-def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele):
+@click.option('-c', '--continue_train', is_flag=True)
+def main(data_cnf, model_cnf, mode, start_id, num_models, continue_train):
     yaml = YAML(typ='safe')
     data_cnf, model_cnf = yaml.load(Path(data_cnf)), yaml.load(Path(model_cnf))
     model_name = model_cnf['name']
@@ -95,35 +85,50 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     elif model_structure == 'TFNet3':
         from tfnet.networks_tfnet3 import TFNet3 as Selected_Model
     else:
-        raise ValueError(f"Unknown network type: {model_structure}")     
+        raise ValueError(f"Unknown network type: {model_structure}")    
 
     classweights = model_cnf['classweights']
 
     if classweights:
-        class_weights_dict = calculate_class_weights_dict(data_cnf['train'])
+        class_weights_dict = True
     else :
-        class_weights_dict = None
+        class_weights_dict = False
 
 
     if mode == "train":
-        train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
-        valid_data = get_data_fn(data_cnf['valid']) if train_data is not None and 'valid' in data_cnf else None
         for model_id in range(start_id, start_id + num_models):
-            model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+            if continue_train:
+                logger.info(f'Continue train Mode')
+                model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+                                **model_cnf['model'])
+                logger.info(f'Loading Model: {model_path.stem}-{model_id}')
+                model.load_model()
+
+                train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
+                valid_data = get_data_fn(data_cnf['valid']) if train_data is not None and 'valid' in data_cnf else None
+
+                train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data)
+
+            else: 
+                if not model_path.with_stem(f'{model_path.stem}-{model_id}').exists():
+                    model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
-            if not continue_train or not model.model_path.exists():
-                train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
+                    
+                    train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
+                    valid_data = get_data_fn(data_cnf['valid']) if train_data is not None and 'valid' in data_cnf else None
+                    
+                    train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data)
+                else:
+                    logger.info(f'Model already exsit: {model_path.stem}-{model_id}')
+                    
             
     elif mode == 'eval':
         test_data = get_data_fn(data_cnf['test'])
-        shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
-        
-        #chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] + shift for x in test_data], [x[2] - shift for x in test_data], [x[-2] for x in test_data] # depend on the input data len
         chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data], [x[-1] for x in test_data]
 
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
-            model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+            model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict, 
                           **model_cnf['model'])
             scores_lists.append(test(model, data_cnf, model_cnf, test_data=test_data))
         output_eval(chr, start, stop, np.array(targets_lists), np.mean(scores_lists, axis=0), all_tfs, res_path)
@@ -163,7 +168,7 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
                 #pdb.set_trace()
 
                 #output_res(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], np.mean(scores_[cv_id == cv_], axis=0),
-                output_eval(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_], all_tfs,           
+                output_eval(np.array(data_group_name)[cv_id == cv_], np.array(data_truth)[cv_id == cv_], scores_[cv_id == cv_], all_tfs,         
                        res_path.with_name(f'{res_path.stem}-5CV'))
 
 

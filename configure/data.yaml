@@ -1,29 +1,22 @@
-tf_seq : data/tf_pseudosequences.txt
-
-train: data/tf_chip/shared_cross_data/GM12878/data_test.txt.gz
-
-train_prefix: data/tf_chip/shared_cross_data/GM12878/mini_
+train: data/tf_chip/H1_test/data_train.txt.gz
+train_prefix: data/tf_chip/H1_test/data_train_mini2_
 # when using train_prefix by split, must enable valid dataset
-#valid: data/tf_chip/shared_cross_data/GM12878/data_valid.txt.gz
+valid: data/tf_chip/H1_test/data_valid.txt.gz
+test: 
+predict: 
 
-test: data/tf_chip/shared_cross_data/GM12878/data_train_mini.txt.gz
-predict: data/tf_chip/shared_cross_data/GM12878/data_train_mini.txt.gz
-
-genome_fasta_file: data/genome/hg19.genome.fa
-#bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig', 'data/genome/genome.genmap.bw']
-#bigwig_file: ['data/atac/DNASE.GM12878.fc.signal.bigwig', 'data/genome/wgEncodeDukeMapabilityUniqueness35bp.bigWig']
-#bigwig_file: ['data/atac/GM12878.bw','data/genome/wgEncodeDukeMapabilityUniqueness35bp.bigWig']
-bigwig_file: ['data/atac/GM12878.bw']
+#genome_fasta_file: ../tfnet/data/genome/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+genome_fasta_file: ./data/genome/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+#bigwig_file: ['../tfnet/data/atac/grch38/HepG2.bigWig','../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw']
+bigwig_file: ['./data/atac/grch38/H1.bigWig']
 
 results: results
 
 #preprocess
-
 input_dir: data/tf_chip/
 genome_window_step: 50
 target_window_size: 200
 valid_chroms: ['chr11']
-#test_chroms: ['chr1', 'chr8', 'chr21']
-test_chroms: ['chr1', 'chr8', 'chr21', 'chr2', 'chr9']
-genome_sizes_file: data/tf_chip/hg19.autoX.chrom.sizes
-blacklist_file: data/tf_chip/filter_blacklist.bed
+test_chroms: ['chr1', 'chr8', 'chr21']
+genome_sizes_file: data/tf_chip/grch38.autoX.chrom.sizes
+blacklist_file: data/tf_chip/filter.hg38-blacklist.v2.bed

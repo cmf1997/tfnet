@@ -56,24 +56,14 @@ def generate_cv_id(length, num_groups=5):
     return labels
 
 
-def get_binding_core(data_list, model_cnf, model_path, start_id, num_models, core_len=9):
-    scores_list = []
-    for model_id in range(start_id, start_id + num_models):
-        model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), pooling=False,
-                      **model_cnf['model'])
-        scores_list.append(test(model, model_cnf, data_list))
-    return (scores:=np.mean(scores_list, axis=0)).argmax(-1), scores
-
-
 @click.command()
 @click.option('-d', '--data-cnf', type=click.Path(exists=True))
 @click.option('-m', '--model-cnf', type=click.Path(exists=True))
 @click.option('--mode', type=click.Choice(('train', 'eval', 'predict','5cv', 'loo', 'lomo')), default=None)
 @click.option('-s', '--start-id', default=0)
 @click.option('-n', '--num_models', default=1)
-@click.option('-c', '--continue', 'continue_train', is_flag=True)
-@click.option('-a', '--allele', default=None)
-def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele):
+@click.option('-c', '--continue_train', is_flag=True)
+def main(data_cnf, model_cnf, mode, start_id, num_models, continue_train):
     yaml = YAML(typ='safe')
     data_cnf, model_cnf = yaml.load(Path(data_cnf)), yaml.load(Path(model_cnf))
     model_name = model_cnf['name']
@@ -107,19 +97,32 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
         class_weights_dict = None
 
     if mode == "train":
-        train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
-        valid_data = get_data_fn(data_cnf['valid']) if train_data is not None and 'valid' in data_cnf else None
         for model_id in range(start_id, start_id + num_models):
-            model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+            if continue_train:
+                logger.info(f'Continue train Mode')
+                model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
-            if not continue_train or not model.model_path.exists():
+                logger.info(f'Loading Model: {model_path.stem}-{model_id}')
+                model.load_model()
+
+                train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
+                valid_data = get_data_fn(data_cnf['valid']) if train_data is not None and 'valid' in data_cnf else None
+
                 train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
+            else:
+                if not model_path.with_stem(f'{model_path.stem}-{model_id}').exists():
+                    model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+                          **model_cnf['model'])
+                    
+                    train_data = get_data_fn(data_cnf['train']) if mode is None or mode == 'train' else None
+                    valid_data = get_data_fn(data_cnf['valid']) if train_data is not None and 'valid' in data_cnf else None
+
+                    train(model, data_cnf, model_cnf, train_data=train_data, valid_data=valid_data, class_weights_dict = class_weights_dict)
+                else:
+                    logger.info(f'Model already exsit: {model_path.stem}-{model_id}')                    
             
     elif mode == 'eval':
         test_data = get_data_fn(data_cnf['test'])
-        #shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2) # comment for test data
-        
-        #chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] + shift for x in test_data], [x[2] - shift for x in test_data], [x[-2] for x in test_data] # depend on the input data len
         chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data], [x[-1] for x in test_data]
 
         scores_lists = []
@@ -131,9 +134,6 @@ def main(data_cnf, model_cnf, mode, continue_train, start_id, num_models, allele
     
     elif mode == 'predict':
         predict_data = get_data_fn(data_cnf['predict'])
-        #shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
-
-        #chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-1] for x in predict_data]
         chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data], [x[-1] for x in test_data]
 
         scores_lists = []

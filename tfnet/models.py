@@ -126,7 +126,7 @@ class Model(object):
             for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
                 train_loss += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
             train_loss /= len(train_loader.dataset)
-            balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict)
+            balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss)
             if self.early_stopper_1.early_stop_low(valid_loss):
                 logger.info(f'Early Stopping due to valid loss')
                 break
@@ -136,7 +136,7 @@ class Model(object):
         # ---------------------- record loss pcc for each epoch and plot---------------------- #
 
 
-    def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
+    def valid(self, valid_loader, verbose, epoch_idx, train_loss, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.bind_list
         valid_loss = torch.nn.functional.binary_cross_entropy_with_logits(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
 

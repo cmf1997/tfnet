@@ -51,12 +51,16 @@ python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode predict -n 
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode 5cv # 5 cross-validation
 python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode lomo # leave one data out cross-validation
 
+# continue to train
+python main.py -d configure/data.yaml -m configure/tfnet.yaml --mode train -n 5 -c
+
 # split large training dataset for training #
 # split 
 
 # train_prefix in data.yaml
-gunzip -c data_train.txt.gz | shuf | split -l 400000 -d -a 2
+gunzip -c data_train.txt.gz
 split -l n -d -a 2 data_train.txt data_train_mini_ # where n is the number of lines in each file, 230000 
+gzip data_train_mini_*
 # train
-python main_split.py -d configure/data.yaml -m configure/***.yaml --mode train -n 5
+python main_split.py -d configure/data.yaml -m configure/tfnet.yaml --mode train -n 5
 ```

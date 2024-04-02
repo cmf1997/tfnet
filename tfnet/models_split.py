@@ -71,7 +71,7 @@ class Model(object):
         if class_weights_dict_list:
             self.model_path =  Path(model_path)
         else:
-            self.loss_fn, self.model_path = nn.BCELoss(), Path(model_path)
+            self.loss_fn, self.model_path = nn.BCEWithLogitsLoss(), Path(model_path)
         
         
         self.model_path.parent.mkdir(parents=True, exist_ok=True)
@@ -121,42 +121,33 @@ class Model(object):
         self.get_optimizer(**dict(opt_params))
         self.training_state['best'] = 0
         for epoch_idx in range(num_epochs):
-            #train_loss = 0.0
             for index, train_data_split in enumerate(Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*")):
                 class_weights_dict = class_weights_dict_list[index]
                 train_data = get_data_fn(train_data_split) 
                 train_loader = DataLoader(TFBindDataset(train_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
                               batch_size=model_cnf['train']['batch_size'], shuffle=True)
+                
                 train_loss_each_split = 0.0
                 for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
                     train_loss_each_split += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
                 train_loss_each_split /= len(train_loader.dataset)
                 
-                balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss_each_split, class_weights_dict)
+                balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss_each_split)
                 if self.early_stopper_1.early_stop_low(valid_loss):
                     logger.info(f'Early Stopping due to valid loss')
                     break
                 if self.early_stopper_2.early_stop_high(balanced_accuracy):
                     logger.info(f'Early Stopping due to balanced accuracy')
                     break                      
-                #train_loss += train_loss_each_split
-            #train_loss /= sum(1 for i in Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*"))
      
         # ---------------------- record loss pcc for each epoch and plot---------------------- #
 
 
-    def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
+    def valid(self, valid_loader, verbose, epoch_idx, train_loss, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.bind_list
-        #if class_weights_dict:
-        #    valid_loss = self.cal_loss(torch.tensor(scores).to(mps_device), torch.tensor(targets), class_weights_dict)
-        #else:
-        #    valid_loss = self.loss_fn(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
-
-        #print("valid scores shape",scores.shape, "valid targets shape", targets.shape)
-        #scores = nn.functional.sigmoid(torch.tensor(scores))
-
         valid_loss = torch.nn.functional.binary_cross_entropy_with_logits(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
-        #mean_auc = get_mean_auc(targets, scores)
+
+        mean_auc = get_mean_auc(targets, scores)
         f1_score = get_mean_f1(targets, scores)
         recall_score = get_mean_recall(targets, scores)
         aupr = get_mean_aupr(targets, scores)
@@ -165,14 +156,14 @@ class Model(object):
         balanced_accuracy = get_mean_balanced_accuracy_score(targets, scores)
 
         
-        #if mean_auc > self.training_state['best']:
-        #    self.save_model()
-        #    self.training_state['best'] = mean_auc
+        if mean_auc > self.training_state['best']:
+            self.save_model()
+            self.training_state['best'] = mean_auc
         if verbose:
             logger.info(f'Epoch: {epoch_idx}  '
                         f'train loss: {train_loss:.5f}  '
                         f'valid loss: {valid_loss:.5f}  ' 
-         #               f'mean_auc: {mean_auc:.5f}  '
+                        f'mean_auc: {mean_auc:.5f}  '
                         f'aupr: {aupr:.5f}  '
                         f'recall score: {recall_score:.5f}  '
                         f'f1 score: {f1_score:.5f}  '
@@ -182,8 +173,6 @@ class Model(object):
                         )
             
         # ---------------------- record data for plot ---------------------- #
-        '''
-
         with open('results/train_record.txt', 'a') as output_file:
             writer = csv.writer(output_file, delimiter="\t")
             writer.writerow([epoch_idx, train_loss, valid_loss.item(), mean_auc, f1_score, lrap, accuracy, balanced_accuracy])
@@ -208,7 +197,6 @@ class Model(object):
             plt.legend(loc='best')
             plt.savefig('results/train.pdf')
             plt.close()
-        '''
 
         return balanced_accuracy, valid_loss
 
@@ -219,9 +207,7 @@ class Model(object):
                                for data_x, _ in tqdm(data_loader, leave=False, dynamic_ncols=True)], axis=0)
 
     def save_model(self):
-        model_path = self.model_path.with_stem(f'{self.model_path.stem}')
-        torch.save(self.model.state_dict(), model_path)
-
+        torch.save(self.model.state_dict(), self.model_path)
 
     def load_model(self):
         self.model.load_state_dict(torch.load(self.model_path))

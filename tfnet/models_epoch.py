@@ -123,7 +123,7 @@ class Model(object):
     #          num_epochs=20, verbose=True, **kwargs):
         
     # ---------------------- for samples_per_epoch ---------------------- #
-    def train(self, data_cnf, model_cnf, train_data, valid_data, class_weights_dict=None, opt_params: Optional[Mapping] = (),
+    def train(self, data_cnf, model_cnf, train_data, valid_data, opt_params: Optional[Mapping] = (),
                num_epochs=20, verbose=True, **kwargs): 
         
         valid_loader = DataLoader(TFBindDataset(valid_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
@@ -161,7 +161,7 @@ class Model(object):
             train_loss /= len(train_loader.dataset)
             #train_loss /= len(train_loader.dataset)
 
-            balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss, class_weights_dict_single_epoch)
+            balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss)
             if self.early_stopper_1.early_stop_low(valid_loss):
                 logger.info(f'Early Stopping due to valid loss')
                 break
@@ -171,7 +171,7 @@ class Model(object):
         # ---------------------- record loss for each epoch and plot---------------------- #
 
 
-    def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
+    def valid(self, valid_loader, verbose, epoch_idx, train_loss, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.bind_list
         valid_loss = torch.nn.functional.binary_cross_entropy_with_logits(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
         mean_auc = get_mean_auc(targets, scores)
