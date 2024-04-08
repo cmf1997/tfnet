@@ -91,7 +91,7 @@ class TFNet3(Network):
         #self.full_connect = nn.ModuleList([nn.Linear(in_s, out_s) for in_s, out_s in zip(full_size[:-1], full_size[1:])])
         for i in range(len(all_tfs)):
             setattr(self, "FC%d" %i, nn.Sequential(
-                                        nn.Linear(in_features=512,out_features=64),
+                                        nn.Linear(in_features=in_channels[-1]*2,out_features=64),
                                         nn.ReLU(),
                                         nn.Linear(in_features=64,out_features=1),
                                         ))

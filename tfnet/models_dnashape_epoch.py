@@ -228,7 +228,7 @@ class Model(object):
     def predict(self, data_loader: DataLoader, valid=False, **kwargs):
         if not valid:
             self.load_model()
-        return np.concatenate([nn.functional.sigmoid(self.predict_step(data_x, **kwargs)).cpu()
+        return np.concatenate([torch.sigmoid(self.predict_step(data_x, **kwargs)).cpu()
                                for data_x, _ in tqdm(data_loader, leave=False, dynamic_ncols=True)], axis=0)
 
     def save_model(self):
