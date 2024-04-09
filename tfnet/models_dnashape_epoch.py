@@ -132,7 +132,7 @@ class Model(object):
         W_values = np.linspace(0, len(train_data), 5 + 1)
         W_chunks = list(map(int, W_values))
 
-        num_epochs = num_epochs * 5 # custom true epoch for entire dataset
+        num_epochs = num_epochs * 5
 
     # ---------------------- section ---------------------- #
     
