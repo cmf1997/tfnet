@@ -28,7 +28,8 @@ from sklearn.metrics import precision_recall_curve, average_precision_score, auc
 from logzero import logger
 import pdb
 import warnings
-warnings.filterwarnings('error')  
+#warnings.filterwarnings('error')  
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 __all__ = ['CUTOFF', 'get_mean_auc', 'get_auc', 'get_recall', 'get_f1', 'get_precision', 'get_mean_precision', 'get_mean_recall', 'get_mean_aupr', 'get_mean_f1', 'get_mean_accuracy_score', 'get_balanced_accuracy_score', 'get_mean_balanced_accuracy_score','get_label_ranking_average_precision_score', 'get_group_metrics', 'output_eval', 'output_predict']
 
@@ -152,7 +153,7 @@ def get_mean_balanced_accuracy_score(targets, scores, axis = 0, cutoff=CUTOFF):
 
 def output_eval(chrs, starts, stops, targets_lists, scores_lists, all_tfs, output_path: Path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    eval_out_path = output_path.with_suffix('.eval.tsv')
+    eval_out_path = f'{output_path}.eval.tsv'
 
     metrics = []
     metrics.append(get_mean_auc(targets_lists, scores_lists))
@@ -174,13 +175,13 @@ def output_eval(chrs, starts, stops, targets_lists, scores_lists, all_tfs, outpu
         }
     )
 
-    plot_data.to_csv(output_path.with_suffix('.eval.repl.tsv'), sep='\t')
+    plot_data.to_csv(f'{output_path}.eval.repl.tsv', sep='\t')
 
     #sns.set(rc={'figure.figsize':(7,4)})
     rel_plot = sns.scatterplot(data=plot_data, x="AUC", y="AUPR", hue="RECALL", size="F1", sizes=(50,200))
     sns.move_legend(rel_plot, "upper left", bbox_to_anchor=(1, 0.75))
     fig = rel_plot.get_figure()
-    fig.savefig(output_path.with_suffix('.eval.repl.pdf')) 
+    fig.savefig(f'{output_path}.eval.repl.pdf', bbox_inches='tight')
 
 
     fig, axes = plt.subplots(2, 2)
@@ -205,7 +206,7 @@ def output_eval(chrs, starts, stops, targets_lists, scores_lists, all_tfs, outpu
     axes[1,1].set_xticklabels(xlabel, fontsize=4)
     axes[1,1].set(xlabel='')
 
-    fig.savefig(output_path.with_suffix('.eval.box.pdf')) 
+    fig.savefig(f'{output_path}.eval.box.pdf', bbox_inches='tight')
     # ---------------------- section ---------------------- #
     ori_scores_lists = scores_lists
     ori_scores_lists = np.split(ori_scores_lists,ori_scores_lists.shape[0], axis=0)
@@ -236,7 +237,7 @@ def output_eval(chrs, starts, stops, targets_lists, scores_lists, all_tfs, outpu
 
 def output_predict(chrs, starts, stops, scores_lists, output_path: Path):
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    predict_out_path = output_path.with_suffix('.predict.tsv')
+    predict_out_path = f'{output_path}.predict.tsv'
 
     scores_lists = np.where(scores_lists > CUTOFF, 1, 0)
     scores_lists = np.split(scores_lists,scores_lists.shape[0], axis=0)

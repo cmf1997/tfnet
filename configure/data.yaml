@@ -2,13 +2,15 @@ train: data/tf_chip/H1_test/data_train_mini2_ao.gz
 train_prefix: data/tf_chip/H1_test/data_train_mini2_
 # when using train_prefix by split, must enable valid dataset
 valid: data/tf_chip/H1_test/data_valid.txt.gz
-test: 
+test: data/tf_chip/H1_test/data_valid.txt.gz
+test_list: [ 'data/tf_chip/H1_test/data_train_mini2_an.gz', 'data/tf_chip/H1_test/data_train_mini2_ao.gz']
 predict: 
 
 #genome_fasta_file: ../tfnet/data/genome/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
 genome_fasta_file: ./data/genome/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
 #bigwig_file: ['../tfnet/data/atac/grch38/HepG2.bigWig','../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw']
 bigwig_file: ['./data/atac/grch38/H1.bigWig']
+bigwig_file_list: [['./data/atac/grch38/H1.bigWig'], ['./data/atac/grch38/H1.bigWig']]
 
 results: results
 

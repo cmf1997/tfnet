@@ -41,8 +41,12 @@ def train(model, data_cnf, model_cnf, train_data, valid_data=None, class_weights
     logger.info(f'Finish training model {model.model_path}')
 
 
-def test(model, data_cnf, model_cnf, test_data):
-    data_loader = DataLoader(TFBindDataset(test_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
+def test(model, data_cnf, model_cnf, test_data, eval_list=False, bigwig=None):
+    if eval_list:
+        data_loader = DataLoader(TFBindDataset(test_data, data_cnf['genome_fasta_file'], bigwig, **model_cnf['padding']),
+                             batch_size=model_cnf['test']['batch_size'])
+    else:
+        data_loader = DataLoader(TFBindDataset(test_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
                              batch_size=model_cnf['test']['batch_size'])
     return model.predict(data_loader)
 
@@ -59,7 +63,7 @@ def generate_cv_id(length, num_groups=5):
 @click.command()
 @click.option('-d', '--data-cnf', type=click.Path(exists=True))
 @click.option('-m', '--model-cnf', type=click.Path(exists=True))
-@click.option('--mode', type=click.Choice(('train', 'eval', 'predict','5cv', 'loo', 'lomo')), default=None)
+@click.option('--mode', type=click.Choice(('train', 'eval', 'eval_list', 'predict','5cv', 'loo', 'lomo')), default=None)
 @click.option('-s', '--start-id', default=0)
 @click.option('-n', '--num_models', default=1)
 @click.option('-c', '--continue_train', is_flag=True)
@@ -131,6 +135,24 @@ def main(data_cnf, model_cnf, mode, start_id, num_models, continue_train):
                           **model_cnf['model'])
             scores_lists.append(test(model, data_cnf, model_cnf, test_data=test_data))
         output_eval(chr, start, stop, np.array(targets_lists), np.mean(scores_lists, axis=0), all_tfs, res_path)
+        
+    
+    elif mode == 'eval_list':
+        for index, file_path in enumerate(data_cnf['test_list']):
+            test_data = get_data_fn(data_cnf['test_list'][index])
+            test_prefix = Path(data_cnf['test_list'][index]).stem
+            eval_path = Path(data_cnf['results'])/f'{model_name}.{test_prefix}'
+
+            chr, start, stop, targets_lists = [x[0] for x in test_data], [x[1] for x in test_data], [x[2] for x in test_data], [x[-1] for x in test_data]
+
+            scores_lists = []
+            for model_id in range(start_id, start_id + num_models):
+                model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+                            **model_cnf['model'])
+                #pdb.set_trace()
+                scores_lists.append(test(model, data_cnf, model_cnf, test_data=test_data, eval_list=True, bigwig = data_cnf['bigwig_file_list'][index]))
+            output_eval(chr, start, stop, np.array(targets_lists), np.mean(scores_lists, axis=0), all_tfs, eval_path)    
+
     
     elif mode == 'predict':
         predict_data = get_data_fn(data_cnf['predict'])

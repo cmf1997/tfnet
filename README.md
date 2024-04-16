@@ -64,3 +64,13 @@ gzip data_train_mini_*
 # train
 python main_split.py -d configure/data.yaml -m configure/tfnet.yaml --mode train -n 5
 ```
+
+### for TFNet Eval
+```
+using test and bigwig_file list in data.yaml and eval_list mode, for batch eval on different datasets
+test_list: [ 'data/tf_chip/H1_test/data_train_mini2_an.gz', 'data/tf_chip/H1_test/data_train_mini2_ao.gz']
+bigwig_file_list: [['./data/atac/grch38/H1.bigWig'], ['./data/atac/grch38/H1.bigWig']]
+
+python main.py -d configure/data.yaml -m configure/tfnet3.yaml --mode eval_list -n 1
+
+```
