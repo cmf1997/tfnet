@@ -95,7 +95,7 @@ def main(data_cnf, model_cnf, mode, start_id, num_models, continue_train):
 
     classweights = model_cnf['classweights']
 
-    if classweights:
+    if classweights and ( mode != "eval" and model != "eval_list" and model != "predict"):
         class_weights_dict = calculate_class_weights_dict(data_cnf['train'])
     else :
         class_weights_dict = None
