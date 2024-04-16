@@ -1,4 +1,4 @@
-train: data/tf_chip/H1_test/data_train.txt.gz
+train: data/tf_chip/H1_test/data_train_mini2_ao.gz
 train_prefix: data/tf_chip/H1_test/data_train_mini2_
 # when using train_prefix by split, must enable valid dataset
 valid: data/tf_chip/H1_test/data_valid.txt.gz

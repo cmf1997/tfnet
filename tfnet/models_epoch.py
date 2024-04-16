@@ -180,7 +180,7 @@ class Model(object):
         aupr = get_mean_aupr(targets, scores)
         lrap = get_label_ranking_average_precision_score(targets, scores)
         accuracy = get_mean_accuracy_score(targets, scores)
-        balanced_accuracy = get_mean_balanced_accuracy_score(targets, scores)
+        balanced_accuracy = get_mean_balanced_accuracy_score(targets, scores, axis = 1)
 
         if mean_auc > self.training_state['best']:
             self.save_model()
