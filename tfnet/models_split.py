@@ -78,7 +78,7 @@ class Model(object):
         self.optimizer = None
         self.training_state = {}
 
-        self.early_stopper_1 = EarlyStopper(patience=8, min_delta=0.005)
+        self.early_stopper_1 = EarlyStopper(patience=1, min_delta=0.000)
         self.early_stopper_2 = EarlyStopper(patience=8, min_delta=0.005)
 
     def get_scores(self, inputs, **kwargs):
@@ -120,25 +120,30 @@ class Model(object):
               num_epochs=20, verbose=True, **kwargs):
         self.get_optimizer(**dict(opt_params))
         self.training_state['best'] = 0
+        break_flag = False
         for epoch_idx in range(num_epochs):
-            for index, train_data_split in enumerate(Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*")):
-                class_weights_dict = class_weights_dict_list[index]
-                train_data = get_data_fn(train_data_split) 
-                train_loader = DataLoader(TFBindDataset(train_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
-                              batch_size=model_cnf['train']['batch_size'], shuffle=True)
-                
-                train_loss_each_split = 0.0
-                for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
-                    train_loss_each_split += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
-                train_loss_each_split /= len(train_loader.dataset)
-                
-                balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss_each_split)
-                if self.early_stopper_1.early_stop_low(valid_loss):
-                    logger.info(f'Early Stopping due to valid loss')
-                    break
-                if self.early_stopper_2.early_stop_high(balanced_accuracy):
-                    logger.info(f'Early Stopping due to balanced accuracy')
-                    break                      
+            if break_flag:
+                break
+            else:
+                for index, train_data_split in enumerate(Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*")):
+                    class_weights_dict = class_weights_dict_list[index]
+                    train_data = get_data_fn(train_data_split) 
+                    train_loader = DataLoader(TFBindDataset(train_data, data_cnf['genome_fasta_file'], data_cnf['bigwig_file'], **model_cnf['padding']),
+                                batch_size=model_cnf['train']['batch_size'], shuffle=True)
+                    
+                    train_loss_each_split = 0.0
+                    for inputs, targets in tqdm(train_loader, desc=f'Epoch {epoch_idx}', leave=False, dynamic_ncols=True):
+                        train_loss_each_split += self.train_step(inputs, targets, class_weights_dict, **kwargs) * targets.shape[0]
+                    train_loss_each_split /= len(train_loader.dataset)
+                    
+                    balanced_accuracy,valid_loss = self.valid(valid_loader, verbose, epoch_idx, train_loss_each_split)
+                    if self.early_stopper_1.early_stop_low(valid_loss):
+                        break_flag = True
+                        logger.info(f'Early Stopping due to valid loss')
+                        break
+                    # if self.early_stopper_2.early_stop_high(balanced_accuracy):
+                    #     logger.info(f'Early Stopping due to balanced accuracy')
+                    #     break                      
      
         # ---------------------- record loss pcc for each epoch and plot---------------------- #
 

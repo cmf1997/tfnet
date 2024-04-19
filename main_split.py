@@ -85,7 +85,7 @@ def main(data_cnf, model_cnf, mode, start_id, num_models, continue_train):
             
 
     classweights = model_cnf['classweights']
-    if classweights and ( mode != "eval" and model != "eval_list" and model != "predict"):
+    if classweights and ( mode != "eval" and mode != "eval_list" and mode != "predict"):
         class_weights_dict_list = []
         for index, train_data_split in enumerate(Path(data_cnf['train_prefix']).parent.glob(str(Path(data_cnf['train_prefix']).name)+"*")):
             class_weights_dict_list.append(calculate_class_weights_dict(train_data_split))
