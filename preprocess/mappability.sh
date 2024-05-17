@@ -54,3 +54,10 @@ wigToBigWig genome.genmap.wig genome.genmap.chrom.sizes genome.genmap.bw
 
 # reverse strand, do all the same manipulate to reverse strand
 seqkit seq -r -t genome.fa > complement_genome.fa
+
+
+
+# method3
+# download from
+# http://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/
+# https://bismap.hoffmanlab.org

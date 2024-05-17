@@ -1,0 +1,52 @@
+train: ../tfnet/data/tf_chip/grch38_ENCODE/HepG2/data_train.txt.gz
+train_prefix: ../tfnet/data/tf_chip/grch38_ENCODE/HepG2/data_train_remove_split
+valid: ../tfnet/data/tf_chip/grch38_ENCODE/HepG2/data_valid.remove.txt.gz
+test: ../tfnet/data/tf_chip/grch38_ENCODE/HepG2/data_test.remove.txt.gz
+#test_list: [
+#  '../tfnet/data/tf_chip/grch38_ENCODE/label_transfer/from.A549.to.HepG2.data_test.txt.gz',
+#  '../tfnet/data/tf_chip/grch38_ENCODE/label_transfer/from.GM12878.to.HepG2.data_test.txt.gz',
+#  '../tfnet/data/tf_chip/grch38_ENCODE/label_transfer/from.H1.to.HepG2.data_test.txt.gz',  
+#  '../tfnet/data/tf_chip/grch38_ENCODE/label_transfer/from.HeLa-S3.to.HepG2.data_test.txt.gz',
+#  '../tfnet/data/tf_chip/grch38_ENCODE/label_transfer/from.K562.to.HepG2.data_test.txt.gz',
+#  '../tfnet/data/tf_chip/grch38_ENCODE/label_transfer/from.MCF-7.to.HepG2.data_test.txt.gz',
+#  '../tfnet/data/tf_chip/grch38_ENCODE/label_transfer/from.SK-N-SH.to.HepG2.data_test.txt.gz',
+#  '../tfnet/data/tf_chip/grch38_ENCODE/label_transfer/from.WTC11.to.HepG2.data_test.txt.gz',
+#  ]  # for eval list
+
+test_list: [
+        "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/chip_atac_data/result/BATF-TFAP4-knockin.TFAP4.generate.HepG2.data_test.txt.gz",
+        "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/chip_atac_data/result/TFAP4-knockin.TFAP4.generate.HepG2.data_test.txt.gz",
+        "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/chip_atac_data/result/tNGFR-knockin.BATF.generate.GM12878.data_test.txt.gz"
+        ]
+
+predict: data/tf_chip/shared_cross_data/HepG2/data_train_mini.txt.gz
+
+genome_fasta_file: ../tfnet/data/genome/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta
+bigwig_file: ['../tfnet/data/atac/grch38/1x/ENCFF097NAZ.1x.bigWig','../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw']
+#bigwig_file_list: [
+#  ['../tfnet/data/atac/grch38/A549.bigWig' ,'../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
+#  ['../tfnet/data/atac/grch38/GM12878.bigWig' ,'../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
+#  ['../tfnet/data/atac/grch38/H1.bigWig' ,'../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],   
+#  ['../tfnet/data/atac/grch38/HeLa-S3.bigWig' ,'../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
+#  ['../tfnet/data/atac/grch38/K562.bigWig' ,'../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
+#  ['../tfnet/data/atac/grch38/MCF-7.bigWig' ,'../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
+#  ['../tfnet/data/atac/grch38/SK-N-SH.bigWig' ,'../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
+#  ['../tfnet/data/atac/grch38/WTC11.bigWig' ,'../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
+#  ] # for eval list
+
+bigwig_file_list: [
+        ['/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/chip_atac_data/result/BATF-TFAP4-knockin-ATAC/merge.1x.normal.bigWig', '../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
+        ['/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/chip_atac_data/result/TFAP4-knockin-ATAC/merge.1x.normal.bigWig', '../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
+        ['/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/chip_atac_data/result/tNGFR-knockin-ATAC/merge.1x.normal.bigWig', '../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw']
+
+
+results: results
+
+#preprocess
+input_dir: data/tf_chip/grch38_ENCODE/HepG2/
+genome_window_step: 50
+target_window_size: 200
+valid_chroms: ['chr11']
+test_chroms: ['chr1', 'chr8', 'chr21']
+genome_sizes_file: data/tf_chip/grch38.autoX.chrom.sizes
+blacklist_file: data/tf_chip/filter.hg38-blacklist.v2.bed
