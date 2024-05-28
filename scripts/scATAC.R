@@ -12,7 +12,7 @@ plan("multicore", workers = 4)
 options(future.globals.maxSize = 25 * 1024^3) # for 20 Gb RAM
 
 
-# ---------------------- GSE181062 map in hg19 ---------------------- #
+# ---------------------- GSE129785 map in hg19 ---------------------- #
 # ---------------------- start from mtx ---------------------- #
 atac_matrix <- ReadMtx(
   mtx = "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/GSE129785/matrix.mtx.gz", 
@@ -31,20 +31,73 @@ chrom_assay <- CreateChromatinAssay(
   fragments = '/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/fragments/sort.rename.concat.fragments.tsv.gz',
 )
 
-GSE181062 <- CreateSeuratObject(
+GSE129785 <- CreateSeuratObject(
   counts = chrom_assay,
   assay = "peaks",
   meta.data = metadata
 )
 
-Idents(GSE181062) <- GSE181062$Clusters
+Idents(GSE129785) <- GSE129785$Clusters
 annotations = c("Naive CD4 T", "Th17", "Tfh", "Treg", "Naive CD8 T", "Th1", "Memory CD8 T", "CD8 TEx", "Effector CD8 T")
-names(annotations) <- sort(levels(GSE181062))
-GSE181062 <- RenameIdents(GSE181062, annotations)
+names(annotations) <- sort(levels(GSE129785))
+GSE129785 <- RenameIdents(GSE129785, annotations)
 
-DefaultAssay(GSE181062)
+DefaultAssay(GSE129785)
 
-GSE181062[['UMAP']] <- CreateDimReducObject(embeddings = as.matrix(metadata[c('UMAP1','UMAP2')]), key = "UMAP_", global = T, assay = "peaks")
+GSE129785[['UMAP']] <- CreateDimReducObject(embeddings = as.matrix(metadata[c('UMAP1','UMAP2')]), key = "UMAP_", global = T, assay = "peaks")
+
+
+# ---------------- SplitFragments for bw signal ----------------#
+SplitFragments(
+  object = GSE129785,
+  assay = "peaks",
+  idents = levels(GSE129785),
+  outdir = "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/GSE129785/fragments/split/",
+  append = TRUE,
+  buffer_length = 256L,
+  verbose = TRUE
+)
+
+
+# ---------------------- DA analysis ---------------------- #
+da_peaks_all <- FindAllMarkers(
+  object = GSE129785,
+  #test.use = 'LR',
+  test.use = 'wilcox',
+  latent.vars = 'nCount_peaks'
+)
+save(da_peaks_all,file="/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/GSE129785.da_peaks_all.Rdata")
+write.csv(da_peaks_all, "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/GSE129785.da_peaks.all.csv", row.names=TRUE)
+
+
+# ---------------------- plot ---------------------- #
+# dimplot
+GSE129785_Dimplot <- DimPlot(GSE129785, reduction = "UMAP")
+ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE129785/GSE129785.dimplot.pdf", GSE129785_Dimplot, , width = 8, height = 5)
+
+
+# plot cell number and ratio
+cell_counts_df = as.data.frame(table(Idents(GSE129785)))
+colnames(cell_counts_df) <- c("Group", "Cell_Count")
+count_plot <- ggplot(cell_counts_df, aes(x = Group, y = Cell_Count, fill=Group)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Cell Counts by Group",
+       x = "Group",
+       y = "Cell Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+  legend.position="right",
+  legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90)) + theme(legend.position="none")
+
+ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE129785/GSE129785.cell.dist.pdf", count_plot)
+
+
+
+
+
+
+
+
 
 
 
@@ -87,17 +140,12 @@ DefaultAssay(GSE181062)
 GSE181062[["UMAP"]] <- CreateDimReducObject(embeddings = as.matrix(metadata[c("UMAP_Dimension_1", "UMAP_Dimension_2")]), key = "UMAP_", global = T, assay = "peaks")
 
 
-
-
-
 # ---------------- SplitFragments for bw signal ----------------#
 SplitFragments(
   object = GSE181062,
   assay = "peaks",
-  group.by = "Clusters",
-  idents = ccluster_vector <- paste0("Cluster", 1:9),
-  outdir = "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/fragments/split/",
-  #file.suffix = "",
+  idents = levels(GSE181062),
+  outdir = "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/GSE181062/fragments/split/",
   append = TRUE,
   buffer_length = 256L,
   verbose = TRUE
@@ -112,16 +160,66 @@ da_peaks_2 <- FindMarkers(
   test.use = 'LR',
   latent.vars = 'nCount_peaks'
 )
-save(da_peaks_2,file="/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/da_peaks.2.Rdata")
-write.csv(da_peaks_2, "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/da_peaks.2.csv", row.names=TRUE)
+save(da_peaks_2,file="/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/GSE181062.da_peaks.Rdata")
+write.csv(da_peaks_2, "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/GSE181062.da_peaks.csv", row.names=TRUE)
 
 head(da_peaks_1)
 
 da_peaks_all <- FindAllMarkers(
   object = GSE181062,
-  test.use = 'LR',
+  #test.use = 'LR',
+  test.use = 'wilcox',
   latent.vars = 'nCount_peaks'
-
 )
-#save(da_peaks_all,file="/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/da_peaks_all.Rdata")
-load(file="/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/da_peaks_all.Rdata")
+save(da_peaks_all,file="/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/GSE181062.da_peaks_all.Rdata")
+write.csv(da_peaks_all, "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/GSE181062.da_peaks.all.csv", row.names=TRUE)
+#load(file="/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/GSE181062.da_peaks_all.Rdata")
+
+
+
+
+
+
+# ---------------------- plot ---------------------- #
+# dimplot
+GSE181062_Dimplot <- DimPlot(GSE181062, reduction = "UMAP")
+ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE181062/GSE181062.dimplot.pdf", GSE181062_Dimplot, , width = 8, height = 5)
+
+
+# valcano
+cut_off_pvalue = 0.000001
+cut_off_logFC = 1.6
+da_peaks_2$change <- ifelse(da_peaks_2$p_val < cut_off_pvalue & abs(da_peaks_2$avg_log2FC) >= cut_off_logFC,
+                     ifelse(da_peaks_2$avg_log2FC> cut_off_logFC ,'Up','Down'),
+                     'Stable')
+volcano_plot <- ggplot(
+  da_peaks_2, aes(x = avg_log2FC, y = -log10(p_val), colour=change)) +
+  geom_point(alpha=0.4, size=2, shape=16) +
+  scale_color_manual(values=c("#546de5", "#d2dae2","#ff4757"))+
+  geom_vline(xintercept=c(-cut_off_logFC, cut_off_logFC),lty=4,col="black",lwd=0.8) +
+  geom_hline(yintercept = -log10(cut_off_pvalue),lty=4,col="black",lwd=0.8) +
+  labs(x="log2(fold change)",
+       y="-log10 (p-value)")+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position="right",
+        legend.title = element_blank()) +
+  ggtitle("Effector vs Naive CD8 T")
+
+ggsave("volcano.eff.naive.cd8.pdf", volcano_plot)
+
+
+# plot cell number and ratio
+cell_counts_df = as.data.frame(table(Idents(GSE181062)))
+colnames(cell_counts_df) <- c("Group", "Cell_Count")
+count_plot <- ggplot(cell_counts_df, aes(x = Group, y = Cell_Count, fill=Group)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Cell Counts by Group",
+       x = "Group",
+       y = "Cell Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+  legend.position="right",
+  legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90)) + theme(legend.position="none")
+
+ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE181062/GSE181062.cell.dist.pdf", count_plot)
