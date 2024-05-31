@@ -27,7 +27,8 @@ import matplotlib.pyplot as plt
 import warnings 
 
 warnings.filterwarnings("ignore",category=UserWarning)
-mps_device = torch.device("mps")
+#mps_device = torch.device("mps")
+device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 
 # modifity the initial pcc best to -1, due to small dataset
 
@@ -70,7 +71,7 @@ class Model(object):
 
     """
     def __init__(self, network, model_path, class_weights_dict = None, **kwargs):
-        self.model = self.network = network(**kwargs).to(mps_device)
+        self.model = self.network = network(**kwargs).to(device)
         #pdb.set_trace()
         if class_weights_dict:
             self.model_path =  Path(model_path)
@@ -85,7 +86,7 @@ class Model(object):
         self.early_stopper_2 = EarlyStopper(patience=8, min_delta=0.005)
 
     def get_scores(self, inputs, **kwargs):
-        return self.model(inputs.to(mps_device), **kwargs)
+        return self.model(inputs.to(device), **kwargs)
 
     def cal_loss(self, scores, targets, class_weights_dict):
         if class_weights_dict:
@@ -93,10 +94,10 @@ class Model(object):
             for i in range(targets.shape[0]):
                 for j in range(targets.shape[1]):
                     weight[i][j] = class_weights_dict[j][int(targets[i][j])]
-            loss = nn.functional.binary_cross_entropy_with_logits(scores, targets.to(mps_device), weight.to(mps_device),reduction='mean')
+            loss = nn.functional.binary_cross_entropy_with_logits(scores, targets.to(device), weight.to(device),reduction='mean')
             
         else:
-            loss = self.loss_fn(scores, targets.to(mps_device))
+            loss = self.loss_fn(scores, targets.to(device))
             
         return loss
 
@@ -111,7 +112,7 @@ class Model(object):
     @torch.no_grad()
     def predict_step(self, inputs: torch.Tensor, **kwargs):
         self.model.eval()
-        return self.get_scores(inputs, **kwargs).to(mps_device)
+        return self.get_scores(inputs, **kwargs).to(device)
 
     def get_optimizer(self, optimizer_cls='Adadelta', weight_decay=0, betas=None, **kwargs):
         if isinstance(optimizer_cls, str):
@@ -172,7 +173,7 @@ class Model(object):
 
     def valid(self, valid_loader, verbose, epoch_idx, train_loss, class_weights_dict=None, **kwargs):
         scores, targets = self.predict(valid_loader, valid=True, **kwargs), valid_loader.dataset.bind_list
-        valid_loss = torch.nn.functional.binary_cross_entropy_with_logits(torch.tensor(scores).to(mps_device), torch.tensor(targets).to(mps_device))
+        valid_loss = torch.nn.functional.binary_cross_entropy_with_logits(torch.tensor(scores).to(device), torch.tensor(targets).to(device))
         mean_auc = get_mean_auc(targets, scores)
         f1_score = get_mean_f1(targets, scores)
         recall_score = get_mean_recall(targets, scores)
