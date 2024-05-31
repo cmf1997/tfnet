@@ -73,7 +73,20 @@ write.csv(da_peaks_all, "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl
 # ---------------------- plot ---------------------- #
 # dimplot
 GSE129785_Dimplot <- DimPlot(GSE129785, reduction = "UMAP")
-ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE129785/GSE129785.dimplot.pdf", GSE129785_Dimplot, , width = 8, height = 5)
+ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE129785/GSE129785.dimplot.pdf", GSE129785_Dimplot , width = 8, height = 5)
+
+
+GSE129785_Dimplot <- DimPlot(GSE129785, reduction = "UMAP", group.by = "orig.ident" )
+ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE129785/GSE129785.dimplot.patient.pdf", GSE129785_Dimplot, width = 8, height = 5)
+
+
+# plot cell distribution heatmap
+heatmap_data <- as.matrix(table(GSE129785$Group, Idents(GSE129785)))
+GSE129785_heat <- pheatmap(heatmap_data, cluster_rows=F, cluster_cols=F, border_color=NA, display_numbers=T, number_format="%.0f", cellwidth=40, cellheight=20)
+ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE129785/GSE129785.heatmap.cell.dist.pdf", GSE129785_heat, width = 10, height = 10)
+
+# only colnames contail Tcell
+GSE129785_heat <- pheatmap(heatmap_data[grepl("Tcell", rownames(heatmap_data)),], cluster_rows=F, cluster_cols=F, border_color=NA, display_numbers=T, number_format="%.0f", cellwidth=40, cellheight=20)
 
 
 # plot cell number and ratio
@@ -183,7 +196,16 @@ write.csv(da_peaks_all, "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl
 # ---------------------- plot ---------------------- #
 # dimplot
 GSE181062_Dimplot <- DimPlot(GSE181062, reduction = "UMAP")
-ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE181062/GSE181062.dimplot.pdf", GSE181062_Dimplot, , width = 8, height = 5)
+ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE181062/GSE181062.dimplot.pdf", GSE181062_Dimplot , width = 8, height = 5)
+
+GSE181062_Dimplot <- DimPlot(GSE181062, reduction = "UMAP", group.by = "orig.ident" )
+ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE181062/GSE181062.dimplot.patient.pdf", GSE181062_Dimplot, width = 8, height = 5)
+
+# plot cell distribution heatmap
+GSE181062$sample_type <- paste(GSE181062$orig.ident, GSE181062$sampletype, sep="-")
+heatmap_data <- table(GSE181062$sample_type, Idents(GSE181062))
+GSE181062_heat <- pheatmap(heatmap_data, cluster_rows=F, cluster_cols=F, border_color=NA, display_numbers=T, number_format="%.0f", cellwidth=40, cellheight=20)
+ggsave("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/R/GSE181062/GSE181062.heatmap.cell.dist.pdf", GSE181062_heat)
 
 
 # valcano
