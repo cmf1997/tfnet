@@ -13,6 +13,16 @@ options(future.globals.maxSize = 25 * 1024^3) # for 20 Gb RAM
 
 
 # ---------------------- GSE129785 map in hg19 ---------------------- #
+# cluster1 Naive CD4 T
+# cluster2 Th17
+# cluster3 Tfh
+# cluster4 Treg
+# cluster5 Naive CD8 T
+# cluster6 Th1
+# cluster7 Memory CD8 T
+# cluster8 CD8 TEx
+# cluster9 Effector CD8 T
+
 # ---------------------- start from mtx ---------------------- #
 atac_matrix <- ReadMtx(
   mtx = "/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/GSE129785/matrix.mtx.gz", 
@@ -47,7 +57,13 @@ DefaultAssay(GSE129785)
 GSE129785[['UMAP']] <- CreateDimReducObject(embeddings = as.matrix(metadata[c('UMAP1','UMAP2')]), key = "UMAP_", global = T, assay = "peaks")
 
 
+# ---------------------- save/load Seurat ---------------------- #
+#save(GSE129785,file="/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/GSE129785.Rdata")
+load("/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/tfnet_52/data/scATAC/Rdata/GSE129785.Rdata")
+
+
 # ---------------- SplitFragments for bw signal ----------------#
+DefaultAssay(GSE129785) <- 'peaks'
 SplitFragments(
   object = GSE129785,
   assay = "peaks",
@@ -154,6 +170,7 @@ GSE181062[["UMAP"]] <- CreateDimReducObject(embeddings = as.matrix(metadata[c("U
 
 
 # ---------------- SplitFragments for bw signal ----------------#
+DefaultAssay(GSE181062) <- 'peaks'
 SplitFragments(
   object = GSE181062,
   assay = "peaks",
