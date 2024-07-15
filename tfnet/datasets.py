@@ -25,7 +25,7 @@ __all__ = ["TFBindDataset"]
 
 # code
 class TFBindDataset(Dataset):
-    def __init__(self, data_list, genome_fasta_file, bw_file, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0, target_len=200, DNA_N = True):
+    def __init__(self, data_list, genome_fasta_file, bw_file, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0, target_len=200, DNA_N = True, chromatin_bins= None):
         self.DNA_N = DNA_N
         self.data_list = data_list
         self.DNA_x, self.tf_x = [], []
@@ -39,6 +39,8 @@ class TFBindDataset(Dataset):
         self.tf_len = tf_len
         self.bind_list = [ i[-1] for i in data_list]
         self.bind_list = np.asarray(self.bind_list, dtype=np.float32)
+
+        self.chromatin_bins = chromatin_bins
 
     def __getitem__(self, idx):
         chr, start, stop, bind_list = self.data_list[idx]
@@ -74,6 +76,10 @@ class TFBindDataset(Dataset):
         for index in range(len(self.bigwig_data)):
             bigwig_signal = np.array(self.bigwig_data[index].values(chr,start,stop))
             bigwig_signal[np.isnan(bigwig_signal)] = 0
+
+            # ---------------------- place mappability first, chromatin second ---------------------- #
+            if index == 1 and self.chromatin_bins != None:
+                bigwig_signal = bigwig_signal/self.chromatin_bins
             bigwig_signals.append(bigwig_signal)
             bigwig_signals_rc.append(bigwig_signal[::-1].copy())
 

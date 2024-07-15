@@ -47,6 +47,7 @@ padding:
   DNA_len: 1024
   DNA_pad: 10
   DNA_N: False
+  chromatin_bins: None
 
 train:
   batch_size: 64

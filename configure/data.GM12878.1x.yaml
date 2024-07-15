@@ -40,6 +40,7 @@ bigwig_file_list: [
         ['/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/chip_atac_data/result/BATF-TFAP4-knockin-ATAC/merge.1x.normal.bigWig', '../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
         ['/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/chip_atac_data/result/TFAP4-knockin-ATAC/merge.1x.normal.bigWig', '../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw'],
         ['/lustre/home/acct-medzy/medzy-cai/project/project_tf_dl/chip_atac_data/result/tNGFR-knockin-ATAC/merge.1x.normal.bigWig', '../tfnet/data/genome/grch38.k36.Umap.MultiTrackMappability.bw']
+        ]
 
 
 

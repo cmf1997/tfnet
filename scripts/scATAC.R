@@ -111,9 +111,9 @@ colnames(cell_counts_df) <- c("Group", "Cell_Count")
 count_plot <- ggplot(cell_counts_df, aes(x = Group, y = Cell_Count, fill=Group)) +
   geom_bar(stat = "identity") +
   theme_minimal() +
-  labs(title = "Cell Counts by Group",
+  labs(title = "Cell Counts by Group",  
        x = "Group",
-       y = "Cell Count") +
+       y = "Cell Count") +  
   theme(plot.title = element_text(hjust = 0.5),
   legend.position="right",
   legend.title = element_blank()) + theme(axis.text.x = element_text(angle = 90)) + theme(legend.position="none")

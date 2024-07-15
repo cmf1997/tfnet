@@ -64,8 +64,10 @@ def generate_cv_id(length, num_groups=5):
 def main(data_cnf, model_cnf, mode, start_id, num_models, continue_train):
     yaml = YAML(typ='safe')
     data_cnf, model_cnf = yaml.load(Path(data_cnf)), yaml.load(Path(model_cnf))
+    logger.info(f'check important parameter')
+    logger.info(f"Model Name: {model_cnf['name']}, tf number: {len(model_cnf['model']['all_tfs'])}, chromatin bins: {model_cnf['padding']['chromatin_bins']}, cutoff: {CUTOFF}")
+        
     model_name = model_cnf['name']
-    logger.info(f'Model Name: {model_name}')
     model_path = Path(model_cnf['path'])/f'{model_name}.pt'
     res_path = Path(data_cnf['results'])/f'{model_name}'
     Path(data_cnf['results']).mkdir(parents=True, exist_ok=True)
@@ -89,7 +91,7 @@ def main(data_cnf, model_cnf, mode, start_id, num_models, continue_train):
 
     classweights = model_cnf['classweights']
 
-    if classweights and ( mode != "eval" and model != "eval_list" and model != "predict"):
+    if classweights and ( mode != "eval" and mode != "predict"):
         class_weights_dict = True
     else :
         class_weights_dict = False
@@ -135,15 +137,31 @@ def main(data_cnf, model_cnf, mode, start_id, num_models, continue_train):
     
     elif mode == 'predict':
         predict_data = get_data_fn(data_cnf['predict'])
-        shift = int((model_cnf['padding']['DNA_len'] - model_cnf['padding']['target_len'])/2)
-
-        chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] + shift for x in predict_data], [x[2] - shift for x in predict_data], [x[-1] for x in predict_data]
+        predict_prefix = Path(data_cnf['predict']).stem
+        predict_path = Path(data_cnf['results'])/f'{model_name}.{predict_prefix}'           
+        chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] for x in predict_data], [x[2] for x in predict_data], [x[-1] for x in predict_data]
         scores_lists = []
         for model_id in range(start_id, start_id + num_models):
             model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
                           **model_cnf['model'])
             scores_lists.append(test(model, data_cnf, model_cnf, test_data=predict_data))
-        output_predict(chr, start, stop, np.mean(scores_lists, axis=0), res_path)
+        output_predict(chr, start, stop, np.mean(scores_lists, axis=0), predict_path)
+
+
+    elif mode == 'predict_list':
+        for index, file_path in enumerate(data_cnf['predict_list']):            
+            predict_data = get_data_fn(data_cnf['predict_list'][index])
+            predict_prefix = Path(data_cnf['predict_list'][index]).stem
+            predict_path = Path(data_cnf['results'])/f'{model_name}.{predict_prefix}'              
+            chr, start, stop, targets_lists = [x[0] for x in predict_data], [x[1] for x in predict_data], [x[2] for x in predict_data], [x[-1] for x in predict_data]
+
+            scores_lists = []
+            for model_id in range(start_id, start_id + num_models):
+                model = Model(Selected_Model, model_path=model_path.with_stem(f'{model_path.stem}-{model_id}'), class_weights_dict = class_weights_dict,
+                            **model_cnf['model'])
+                scores_lists.append(test(model, data_cnf, model_cnf, test_data=predict_data))
+            output_predict(chr, start, stop, np.mean(scores_lists, axis=0), predict_path)
+
 
     elif mode == '5cv':
         data = np.asarray(get_data_fn(data_cnf['train']), dtype=object)

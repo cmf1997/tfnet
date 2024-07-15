@@ -204,3 +204,4 @@ class Model(object):
 
     def load_model(self):
         self.model.load_state_dict(torch.load(self.model_path))
+        #self.model.load_state_dict(torch.load(self.model_path, map_location=device))

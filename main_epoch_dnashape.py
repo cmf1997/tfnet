@@ -64,8 +64,10 @@ def generate_cv_id(length, num_groups=5):
 def main(data_cnf, model_cnf, mode, start_id, num_models, continue_train):
     yaml = YAML(typ='safe')
     data_cnf, model_cnf = yaml.load(Path(data_cnf)), yaml.load(Path(model_cnf))
+    logger.info(f'check important parameter')
+    logger.info(f"Model Name: {model_cnf['name']}, tf number: {len(model_cnf['model']['all_tfs'])}, chromatin bins: {model_cnf['padding']['chromatin_bins']}, cutoff: {CUTOFF}")
+        
     model_name = model_cnf['name']
-    logger.info(f'Model Name: {model_name}')
     model_path = Path(model_cnf['path'])/f'{model_name}.pt'
     res_path = Path(data_cnf['results'])/f'{model_name}'
     Path(data_cnf['results']).mkdir(parents=True, exist_ok=True)
