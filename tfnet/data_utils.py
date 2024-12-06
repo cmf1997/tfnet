@@ -28,7 +28,7 @@ set_DNA_len = 1024
 
 # code
 
-def get_data(data_file, DNA_N = True):
+def get_data(data_file):
     data_list = []
     with gzip.open(data_file, 'rt') as fp:
         for line in fp:
@@ -39,27 +39,17 @@ def get_data(data_file, DNA_N = True):
 
             bind_list = [float(i) for i in bind_list.split(',')]
 
-            # ---------------------- encounter w r in dna seq ---------------------- #
-            if DNA_N:
-                if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcgn]', DNA_seq.lower())):
-                    #data_list.append((DNA_seq, bind_list))
-                    bw_signal = ast.literal_eval(bw_signal)
-                    bw_signal = np.array(bw_signal)
-                    for i in range(bw_signal.shape[0]):
-                        bw_list.append([float(i) for i in bw_signal[i].split(",")])
-                    data_list.append((DNA_seq, bw_list, bind_list))
-
-            else:
-                if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcg]', DNA_seq.lower())):
-                    #data_list.append((DNA_seq, bind_list))                        
-                    bw_signal = ast.literal_eval(bw_signal)
-                    bw_signal = np.array(bw_signal)
-                    for i in range(bw_signal.shape[0]):
-                        bw_list.append([float(i) for i in bw_signal[i].split(",")])      
-                    data_list.append((DNA_seq, bw_list, bind_list))   
+            if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcg]', DNA_seq.lower())):
+                #data_list.append((DNA_seq, bind_list))                        
+                bw_signal = ast.literal_eval(bw_signal)
+                bw_signal = np.array(bw_signal)
+                for i in range(bw_signal.shape[0]):
+                    bw_list.append([float(i) for i in bw_signal[i].split(",")])      
+                data_list.append((DNA_seq, bw_list, bind_list))   
     return data_list
 
-def get_data_lazy(data_file, genome_fasta_file, DNA_N = True):
+
+def get_data_lazy(data_file, genome_fasta_file):
     data_list = []
 
     genome_fasta = pysam.Fastafile(genome_fasta_file)
@@ -72,18 +62,6 @@ def get_data_lazy(data_file, genome_fasta_file, DNA_N = True):
 
             bind_list = [float(i) for i in bind_list.split(',')]
 
-            # ---------------------- encounter w r in dna seq ---------------------- #
-            '''
-            DNA_seq = genome_fasta.fetch(chr, start, stop)
-            
-            if DNA_N:
-                if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcgn]', DNA_seq.lower())):
-                    data_list.append((chr, start, stop, bind_list))
-
-            else:
-                if len(DNA_seq) == set_DNA_len and len(DNA_seq) == len(re.findall('[atcg]', DNA_seq.lower())):   
-                    data_list.append((chr, start, stop, bind_list))
-            '''
             # ---------------------- despite n ---------------------- #
             DNA_seq = genome_fasta.fetch(chr, start, stop)
             if len(DNA_seq) != len(re.findall('[atcg]', DNA_seq.lower())):

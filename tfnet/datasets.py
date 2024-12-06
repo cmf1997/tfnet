@@ -25,8 +25,7 @@ __all__ = ["TFBindDataset"]
 
 # code
 class TFBindDataset(Dataset):
-    def __init__(self, data_list, genome_fasta_file, bw_file, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0, target_len=200, DNA_N = True, chromatin_bins= None):
-        self.DNA_N = DNA_N
+    def __init__(self, data_list, genome_fasta_file, bw_file, DNA_len=1024, DNA_pad=10, tf_len=39, padding_idx=0, target_len=200):
         self.data_list = data_list
         self.DNA_x, self.tf_x = [], []
         self.genome_fasta = pysam.Fastafile(genome_fasta_file)
@@ -40,7 +39,6 @@ class TFBindDataset(Dataset):
         self.bind_list = [ i[-1] for i in data_list]
         self.bind_list = np.asarray(self.bind_list, dtype=np.float32)
 
-        self.chromatin_bins = chromatin_bins
 
     def __getitem__(self, idx):
         chr, start, stop, bind_list = self.data_list[idx]
@@ -54,20 +52,13 @@ class TFBindDataset(Dataset):
         stop += shift
 
         DNA_seq = self.genome_fasta.fetch(chr, start, stop)
-        if self.DNA_N:
-            d = {'a':0, 'A':0, 'g':1, 'G':1, 'c':2, 'C':2, 't':3, 'T':3, 'N':4, 'n':4}
-            DNA_seq = self.DNA_pad*"N" + DNA_seq + self.DNA_pad*"N"     # for DNA pad to set conv1d output same dim
-            mat = np.zeros((len(DNA_seq),5))
-            for i in range(len(DNA_seq)):
+
+        d = {'a':0, 'A':0, 'g':1, 'G':1, 'c':2, 'C':2, 't':3, 'T':3}
+        mat = np.zeros((len(DNA_seq),4))
+        for i in range(len(DNA_seq)):
+            if len(re.findall('[atcg]', DNA_seq[i].lower())) != 0:  # no one hot for n
                 mat[i,d[DNA_seq[i]]] = 1
-            DNA_x = mat[:self.DNA_len + self.DNA_pad*2, :5]
-        else: 
-            d = {'a':0, 'A':0, 'g':1, 'G':1, 'c':2, 'C':2, 't':3, 'T':3}
-            mat = np.zeros((len(DNA_seq),4))
-            for i in range(len(DNA_seq)):
-                if len(re.findall('[atcg]', DNA_seq[i].lower())) != 0:  # no one hot for n
-                    mat[i,d[DNA_seq[i]]] = 1
-            DNA_x = mat[:self.DNA_len, :4]
+        DNA_x = mat[:self.DNA_len, :4]
         DNA_x = torch.tensor(DNA_x, dtype=torch.float32)
         # ---------------------- bw_list need padding like DNA_x ---------------------- #
         bigwig_signals = []
@@ -78,18 +69,14 @@ class TFBindDataset(Dataset):
             bigwig_signal[np.isnan(bigwig_signal)] = 0
 
             # ---------------------- place mappability first, chromatin second ---------------------- #
-            if index == 1 and self.chromatin_bins != None:
-                bigwig_signal = bigwig_signal/self.chromatin_bins
             bigwig_signals.append(bigwig_signal)
             bigwig_signals_rc.append(bigwig_signal[::-1].copy())
 
         # ---------------- concatenate rc, comment to abort----------------#
         bigwig_signals.extend(bigwig_signals_rc)
         for i in range(len(bigwig_signals)):
-            if self.DNA_N:
-                bigwig_signal = [0 for i in range(self.DNA_pad)] + [j for j in bigwig_signals[i]] + [0 for i in range(self.DNA_pad)]
-            else:
-                bigwig_signal = bigwig_signals[i]
+
+            bigwig_signal = bigwig_signals[i]
 
             bigwig_signal = np.expand_dims(bigwig_signal, axis=-1)
             bigwig_signal = torch.tensor(bigwig_signal, dtype=torch.float32)

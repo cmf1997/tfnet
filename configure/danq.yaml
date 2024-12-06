@@ -43,9 +43,7 @@ model:
 padding:
   target_len: 200
   DNA_len: 1024
-  DNA_pad: 10
-  DNA_N: False
-  chromatin_bins: None  
+  DNA_pad: 10 
 
 train:
   batch_size: 64

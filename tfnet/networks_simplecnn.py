@@ -22,11 +22,11 @@ __all__ = ['SimpleCNN']
 
 # code
 class Network(nn.Module):
-    def __init__(self, *, padding_idx=0, DNA_pad=10, tf_len=39, **kwargs):
+    def __init__(self, *, padding_idx=0, DNA_pad=10, **kwargs):
         super(Network, self).__init__()
-        self.DNA_pad, self.padding_idx, self.tf_len = DNA_pad, padding_idx, tf_len
+        self.DNA_pad, self.padding_idx = DNA_pad, padding_idx
 
-    def forward(self, DNA_x, tf_x, *args, **kwargs):
+    def forward(self, DNA_x, **kwargs):
         return DNA_x
 
 
